@@ -152,14 +152,36 @@ button.icon svg .fill{fill:currentColor;stroke:none}
 .scope h2{flex:none}
 .scope canvas{display:block;position:absolute;inset:0;width:100%;height:100%;background:#050607}
 #vs{position:static;width:auto;height:auto}   /* kept square; sized from its area in the script */
-.status,.msg{flex:none}
-.status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;font-weight:bold;letter-spacing:.5px;color:var(--dim);padding:6px 0 0}
-.status button{padding:4px 8px}
+/* Footer: always across the bottom of the window, so it never moves when panels are resized */
+footer{flex:none;display:flex;align-items:center;gap:12px;padding:6px 16px;border-top:1px solid var(--line);background:var(--panel);font-family:var(--font-mono);font-size:10px;font-weight:bold;letter-spacing:.5px;color:var(--dim)}
+footer #status{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+footer button{padding:4px 10px}
+/* Source badge in PLAYBACK JOE's colours: green = live (on air), orange = test pattern / file (cued,
+   not live), red = no signal, grey = connecting */
+.src-badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:3px;border:1px solid;font-size:10px;font-weight:bold;letter-spacing:.5px;white-space:nowrap;font-family:var(--font-ui)}
+.src-badge .dot{width:6px;height:6px;border-radius:50%;display:none}
+.src-badge.live{color:#22c55e;border-color:rgba(34,197,94,.55);background:rgba(40,167,69,.15)}
+.src-badge.live .dot{display:block;background:#22c55e;box-shadow:0 0 5px #22c55e}
+.src-badge.cued{color:#f97316;border-color:rgba(249,115,22,.55);background:rgba(249,115,22,.1)}
+.src-badge.nosig{color:#f87171;border-color:rgba(248,113,113,.55);background:rgba(127,29,29,.35)}
+.src-badge.conn{color:#a3a3a3;border-color:#444;background:#222}
+#btnConsole.console-has-error{background:#7f1d1d;color:#fff;border-color:#dc2626}
+/* CONSOLE window */
+#console{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:1000}
+.console-box{width:720px;max-width:calc(100vw - 32px);height:460px;max-height:calc(100vh - 32px);background:#1a1a1a;border:1px solid #444;border-radius:6px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 15px 35px rgba(0,0,0,.9)}
+.console-head{background:#222;padding:12px 16px;font-weight:bold;font-size:11px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #333;color:#fff;letter-spacing:.5px}
+.console-x{background:none;border:none;color:#aaa;font-size:14px;padding:0 4px}
+.console-x:hover{background:none;color:#fff}
+.console-log{flex:1;padding:14px;font-family:var(--font-mono);font-size:11px;overflow-y:auto;color:#f87171;background:#111;display:flex;flex-direction:column;gap:6px;user-select:text;cursor:text;text-transform:none;overflow-wrap:anywhere}
+.console-log .info{color:var(--blue)}
+.console-log .err{color:#f87171}
+.console-empty{color:#666;font-style:italic}
+.console-foot{background:#181818;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #333}
+.console-btns{display:flex;gap:8px}
+.console-ver{font-size:10px;color:#666}
 
 /* Messages and errors, in the CONSOLE style: readable mixed case, selectable */
-.msg{background:#111;border:1px solid var(--edge);border-left:3px solid #f87171;padding:10px 12px;border-radius:4px;font-size:12px;color:#f87171;font-family:var(--font-mono);display:flex;flex-direction:column;gap:8px;overflow-wrap:anywhere;text-transform:none;user-select:text}
-.msg .row{display:flex;gap:6px;flex-wrap:wrap}
-.diag{width:100%;min-height:140px;font:11px/1.4 var(--font-mono);color:#ddd;background:#0a0a0a;border:1px solid var(--edge);border-radius:3px;padding:6px;text-transform:none;user-select:text}
+
 
 /* About box (click the logo or the version badge) */
 #about{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:1000}
@@ -275,14 +297,25 @@ button.icon svg .fill{fill:currentColor;stroke:none}
     <div class="scope" id="vsBox" data-key="vs"><h2>Vectorscope <span>BT.709 · 75% targets</span></h2><div class="area"><canvas id="vs" width="512" height="512"></canvas></div></div>
     <div class="scope" id="wfBox" data-key="wf"><h2>Luma waveform <span>BT.709 Y · 0–100%</span></h2><div class="area"><canvas id="wf" width="812" height="276"></canvas></div></div>
     <div class="scope" id="parBox" data-key="par"><h2><span id="parTitle">RGB parade</span><span class="hr"><span>0–100%</span><button id="parStack" aria-pressed="false" title="Overlay red, green and blue in one panel">Stack</button></span></h2><div class="area"><canvas id="parade" width="812" height="276"></canvas></div></div>
-    <div class="status"><span id="status">waiting for a source</span><button id="copyDiag">Copy diagnostics</button></div>
-    <div class="msg" id="msg" hidden>
-      <div id="msgText"></div>
-      <div class="row"><button id="copyErr">Copy error details</button><button id="hideMsg">Dismiss</button></div>
-      <textarea id="diagBox" class="diag" readonly hidden aria-label="Error details"></textarea>
-    </div>
   </aside>
 </main>
+<!-- Footer across the whole window: what the picture is showing, the live readout, and the CONSOLE -->
+<footer id="footer">
+  <span class="src-badge conn" id="srcBadge"><span class="dot"></span><span id="srcBadgeText">TEST PATTERN</span></span>
+  <span id="status">waiting for a source</span>
+  <button id="btnConsole" title="Log of what happened, and diagnostics to copy">Console</button>
+</footer>
+<!-- CONSOLE, like PLAYBACK JOE's: errors in red, events in blue -->
+<div id="console" hidden>
+  <div class="console-box" role="dialog" aria-modal="true" aria-labelledby="consoleTitle">
+    <div class="console-head"><span id="consoleTitle">System error &amp; scope console</span><button id="consoleClose" class="console-x" aria-label="Close">✕</button></div>
+    <div class="console-log" id="consoleLog"><div class="console-empty">No errors recorded yet. System operational.</div></div>
+    <div class="console-foot">
+      <div class="console-btns"><button id="cClear">Clear logs</button><button id="cCopy">Copy logs</button><button id="cDiag">Copy diagnostics</button></div>
+      <span class="console-ver">SCOPE OPERA JOE <span data-app-version></span></span>
+    </div>
+  </div>
+</div>
 <div id="about" hidden>
   <div class="about-box" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
     <img src="logo.png" alt="Scope Opera Joe">
@@ -303,9 +336,9 @@ function showVersion(){
   document.querySelectorAll('[data-app-version]').forEach(el=>el.textContent=VERSION==='dev'?'DEV':'v'+VERSION);
 }
 showVersion();
-api?.getAppVersion?.().then(v=>{ VERSION=v; showVersion(); if(!stream && source==='test') $('status').textContent=VERSION+' · waiting for a source'; });
+api?.getAppVersion?.().then(v=>{ VERSION=v; showVersion(); log('Scope Opera Joe v'+v+' started'); if(!stream && source==='test') $('status').textContent=VERSION+' · waiting for a source'; });
 const css=name=>getComputedStyle(document.body).getPropertyValue(name);
-const vid=$('vid'), pat=$('pattern'), view=$('view'), stage=$('stage'), msgEl=$('msg');
+const vid=$('vid'), pat=$('pattern'), view=$('view'), stage=$('stage');
 $('status').textContent='waiting for a source';
 
 /* ---------- about box ---------- */
@@ -329,13 +362,39 @@ document.querySelectorAll('input[type=range]').forEach(r=>{
 let stream=null, source='test', zebOn=true, peakOn=false;
 
 /* ---------- helpers ---------- */
-const errLog=[];
-function msg(t,isErr=true){
-  $('msgText').textContent=t||''; msgEl.hidden=!t; $('diagBox').hidden=true;
-  $('copyErr').hidden=!isErr;
-  if(t) requestAnimationFrame(()=>msgEl.scrollIntoView({block:'nearest'}));
-  if(t&&isErr) errLog.push(new Date().toISOString().slice(11,19)+'  '+t);
+/* ---------- CONSOLE: everything that happened, errors in red, events in blue ---------- */
+const logLines=[];                         // [{time, text, err}], also in COPY DIAGNOSTICS
+const consoleEl=$('console'), consoleLog=$('consoleLog');
+function log(text,err=false){
+  const time=new Date().toLocaleTimeString();
+  logLines.push({time,text,err});
+  consoleLog.querySelector('.console-empty')?.remove();
+  const line=document.createElement('div'); line.className=err?'err':'info'; line.textContent='['+time+'] '+text;
+  consoleLog.appendChild(line); consoleLog.scrollTop=consoleLog.scrollHeight;
+  // The CONSOLE button turns red until the console is opened
+  if(err && consoleEl.hidden) $('btnConsole').classList.add('console-has-error');
 }
+// Messages that used to show under the scopes now go to the console; msg('') had cleared the box
+function msg(t,isErr=true){ if(t) log(t,isErr); }
+function showConsole(on){
+  consoleEl.hidden=!on;
+  if(on){ $('btnConsole').classList.remove('console-has-error'); consoleLog.scrollTop=consoleLog.scrollHeight; $('consoleClose').focus(); }
+}
+$('btnConsole').onclick=()=>showConsole(consoleEl.hidden);
+$('consoleClose').onclick=()=>showConsole(false);
+consoleEl.onclick=e=>{ if(e.target===consoleEl) showConsole(false); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !consoleEl.hidden) showConsole(false); });
+$('cClear').onclick=()=>{ logLines.length=0; consoleLog.innerHTML='<div class="console-empty">Console cleared.</div>'; };
+async function copyText(text,btn){
+  const label=btn.textContent;
+  try{
+    if(!(api?.copyText && await api.copyText(text))) await navigator.clipboard.writeText(text);
+    btn.textContent='Copied'; setTimeout(()=>btn.textContent=label,1500);
+  }
+  catch(e){ log('Could not copy to the clipboard ('+e.name+'). Select the text in this console and press Ctrl+C.',true); }
+}
+$('cCopy').onclick=()=>copyText(logLines.map(l=>'['+l.time+'] '+(l.err?'ERROR ':'')+l.text).join('\n')||'(no log lines)',$('cCopy'));
+$('cDiag').onclick=async()=>copyText(await diagnostics(),$('cDiag'));
 async function diagnostics(){
   const L=[];
   L.push('Scope Opera Joe '+VERSION+' diagnostics  '+new Date().toISOString());
@@ -357,19 +416,10 @@ async function diagnostics(){
     try{ L.push('  settings: '+JSON.stringify(tr.getSettings())); }catch(e){}
     try{ const c=tr.getCapabilities?.(); if(c) L.push('  capabilities: '+JSON.stringify({width:c.width,height:c.height,frameRate:c.frameRate})); }catch(e){}
   } else L.push('Active track: none');
-  L.push('Errors this session:'); (errLog.length?errLog:['  (none)']).forEach(e=>L.push('  '+e));
+  L.push('Console log:'); (logLines.length?logLines.map(l=>'['+l.time+'] '+(l.err?'ERROR ':'')+l.text):['(empty)']).forEach(e=>L.push('  '+e));
   return L.join('\n');
 }
-async function copyDiagnostics(btn){
-  const text=await diagnostics();
-  const box=$('diagBox');
-  try{ await navigator.clipboard.writeText(text); btn.textContent='Copied'; setTimeout(()=>btn.textContent=btn.dataset.label,1500); }
-  catch(e){
-    // Clipboard refused: show the text selected so it can be copied with Ctrl/Cmd+C.
-    if(msgEl.hidden){ $('msgText').textContent='Select all and copy (Ctrl+C / Cmd+C):'; msgEl.hidden=false; $('copyErr').hidden=true; }
-    box.value=text; box.hidden=false; box.focus(); box.select();
-  }
-}
+
 function setStageAspect(w,h){ if(w&&h) stage.style.aspectRatio=w+'/'+h; }
 function fitStage(){
   const r=$('picture').getBoundingClientRect();
@@ -488,7 +538,7 @@ async function scan(){
     try{ tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false}); }
     catch(e){
       if(e.name==='NotAllowedError'||e.name==='SecurityError'){ msg('Camera access was blocked ('+e.name+'). Allow camera access for this page, then press RELOAD.'); return; }
-      errLog.push(new Date().toISOString().slice(11,19)+'  default camera would not open while listing devices ('+e.name+')');
+      log('The default camera would not open while listing devices ('+e.name+')');
     }
     devs=await list();
     if(tmp) tmp.getTracks().forEach(t=>t.stop());
@@ -590,8 +640,8 @@ async function useDevice(id){
   // After 4 s say NO SIGNAL, but keep trying behind it: if the device starts sending, the picture appears.
   setTimeout(()=>{ if(my===openSeq && source==='connecting'){ placeholder('NO SIGNAL',true); clearScopes(); } },4000);
   const [w,h]=wantedRes.split('x').map(Number);
-  const log=[];
-  const note=(what,e)=>log.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
+  const tried=[];
+  const note=(what,e)=>tried.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
   async function open(v,what){
     // Only a refusal ends the attempt. A read error can come from one format the device dislikes,
     // so the looser requests below still get their turn. A newer pick ends it too (STALE).
@@ -600,7 +650,7 @@ async function useDevice(id){
     let s=null; const t0=performance.now();
     try{ s=await navigator.mediaDevices.getUserMedia({audio:false,video:v}); }
     catch(e){ if(my!==openSeq) throw STALE; note(what,e); if(e.name==='NotAllowedError'||e.name==='SecurityError') throw e;
-      if(e.name==='NotReadableError' && performance.now()-t0>3000){ log.push('no answer for '+Math.round((performance.now()-t0)/1000)+' s'); throw SILENT; }
+      if(e.name==='NotReadableError' && performance.now()-t0>3000){ tried.push('no answer for '+Math.round((performance.now()-t0)/1000)+' s'); throw SILENT; }
       return null; }
     if(my!==openSeq){ s.getTracks().forEach(t=>t.stop()); throw STALE; }
     return s;
@@ -622,7 +672,7 @@ async function useDevice(id){
   try{
     stream=await tryId(id);
     // Device IDs can change between calls (common when the page is opened as a local file): look the card up again by name.
-    if(!stream){ const d=await findByLabel(); if(d&&d.deviceId&&d.deviceId!==id){ log.push('re-found by name'); stream=await tryId(d.deviceId); } }
+    if(!stream){ const d=await findByLabel(); if(d&&d.deviceId&&d.deviceId!==id){ tried.push('re-found by name'); stream=await tryId(d.deviceId); } }
     // Last resort, only for placeholder IDs (a browser that hides device IDs): open any camera to unlock
     // fresh IDs, then switch to the card by name. With real IDs this would show some other camera as if
     // it were the chosen one, so a real ID that won't open is reported as NO SIGNAL instead.
@@ -632,35 +682,36 @@ async function useDevice(id){
         const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
         const cur=any.getVideoTracks()[0].label;
         const d=await findByLabel();
-        if(!d || list.length<=1 || cur===label){ stream=any; log.push('opened default device'); }
+        if(!d || list.length<=1 || cur===label){ stream=any; tried.push('opened default device'); }
         else { any.getTracks().forEach(t=>t.stop()); stream=await open({deviceId:d.deviceId},'by name'); }
       }
     }
   }catch(e){ if(e===STALE){ stopStream(); return; } /* SILENT, permission or busy: reported below */ }
   if(my!==openSeq){ stopStream(); return; }
   if(!stream){
-    const unreadable=log.some(l=>l.includes('NotReadableError'));
-    const refused=log.some(l=>/NotAllowedError|SecurityError/.test(l));
+    const unreadable=tried.some(l=>l.includes('NotReadableError'));
+    const refused=tried.some(l=>/NotAllowedError|SecurityError/.test(l));
     const virtual=/obs|vmix|ndi|virtual|snap camera|xsplit|manycam/i.test(label);
     let why='';
     if(refused) why='Camera access was refused. ';
     else if(unreadable && virtual) why='It is a virtual camera that isn\'t sending video yet. Switch it on in its own app (in OBS: Start Virtual Camera; in vMix: turn on the External output; for NDI Webcam: pick an NDI source), then choose it again. ';
     else if(unreadable) why='Windows could not read video from it. Another app may be using it (Zoom, Teams, OBS, the device\'s own software), or it has no signal. ';
-    msg('Could not open "'+label+'". '+why+'Tried: '+log.join(' · '));
+    msg('Could not open "'+label+'". '+why+'Tried: '+tried.join(' · '));
     noSignal(id,label); return;
   }
   // Unplugged, or the virtual camera was stopped in its app
   const track=stream.getVideoTracks()[0];
-  if(track) track.onended=()=>{ if(stream?.getVideoTracks()[0]===track){ errLog.push(new Date().toISOString().slice(11,19)+'  "'+label+'" stopped sending video'); noSignal(id,label); } };
+  if(track) track.onended=()=>{ if(stream?.getVideoTracks()[0]===track){ log('"'+label+'" stopped sending video',true); noSignal(id,label); } };
   vid.srcObject=stream; vid.removeAttribute('src');
   source='device'; msg('');
   layout.lastDevice=label; layout.lastId=id; saveLayout();
+  { const s=stream.getVideoTracks()[0]?.getSettings?.()||{}; log('Opened "'+label+'"'+(s.width?' at '+s.width+'×'+s.height+(s.frameRate?' @ '+(+s.frameRate.toFixed(2)):''):'')); }
   await vid.play().catch(()=>{});
   if(my!==openSeq) return;
   // Opened, but frames may not come (an NDI Webcam with no source picked, for example): keep the
   // spinner until the first frame, and say NO SIGNAL if none has come after a few seconds.
   if(vid.readyState>=2) placeholder(null);
-  else setTimeout(()=>{ if(my===openSeq && source==='device' && vid.readyState<2){ placeholder('NO SIGNAL',true); clearScopes(); } },4000);
+  else setTimeout(()=>{ if(my===openSeq && source==='device' && vid.readyState<2){ placeholder('NO SIGNAL',true); clearScopes(); log('"'+label+'" opened but is not sending a picture',true); } },4000);
 }
 /* ---------- video file: title above the picture, transport under it ---------- */
 let loopOn=true, fileFps=0;                 // fileFps is measured from the frames as they play (0 = not known yet)
@@ -733,7 +784,7 @@ function useFile(f){
   openSeq++; stopStream(); placeholder(null); showAllRes(); vid.srcObject=null;
   if(f!==lastFile){ if(fileURL) URL.revokeObjectURL(fileURL); fileURL=URL.createObjectURL(f); lastFile=f; fileFps=0; }
   vid.src=fileURL; vid.loop=loopOn;
-  vid.play().catch(()=>{}); source='file'; showFileUI(f.name);
+  vid.play().catch(()=>{}); source='file'; showFileUI(f.name); log('Video file: '+f.name);
   const sel=$('src'); if(![...sel.options].some(o=>o.value==='file')){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
   sel.value='file'; msg('');
 }
@@ -744,8 +795,7 @@ $('scan').onclick=async()=>{
   const v=$('src').value;
   if(v!=='test' && v!=='file') useDevice(v);
 };
-['copyErr','copyDiag'].forEach(id=>{ const b=$(id); b.dataset.label=b.textContent; b.onclick=()=>copyDiagnostics(b); });
-$('hideMsg').onclick=()=>{ msgEl.hidden=true; };
+
 $('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file'){ if(lastFile) useFile(lastFile); } else useDevice(v); };
 $('res').onchange=()=>{ wantedRes=$('res').value; layout.res=wantedRes; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
 $('fps').onchange=()=>{ wantedFps=$('fps').value; layout.fps=wantedFps; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
@@ -1092,9 +1142,20 @@ let tickFailed='';
 function tick(t){
   requestAnimationFrame(tick);
   try{ frame(t); }
-  catch(e){ const m=(e&&e.message)||String(e); if(m!==tickFailed){ tickFailed=m; errLog.push(new Date().toISOString().slice(11,19)+'  drawing failed: '+m); console.error(e); } }
+  catch(e){ const m=(e&&e.message)||String(e); if(m!==tickFailed){ tickFailed=m; log('Drawing failed: '+m,true); console.error(e); } }
+}
+// Footer badge: what the picture is showing right now
+let badgeNow='';
+function updateBadge(){
+  const noSig=!$('ph').hidden && $('phTitle').textContent==='NO SIGNAL' && !$('phTitle').hidden;
+  const [k,txt]= noSig||source==='none' ? ['nosig','NO SIGNAL']
+    : source==='connecting'||(source==='device'&&vid.readyState<2) ? ['conn','CONNECTING']
+    : source==='device' ? ['live','LIVE'] : source==='file' ? ['cued','FILE'] : ['cued','TEST PATTERN'];
+  if(badgeNow===k+txt) return; badgeNow=k+txt;
+  $('srcBadge').className='src-badge '+k; $('srcBadgeText').textContent=txt;
 }
 function frame(t){
+  updateBadge();
   if(source==='file') updateTransport();
   let el=null, w=0, h=0;
   if(source==='test'){ drawPattern(t); el=pat; w=960; h=540; }

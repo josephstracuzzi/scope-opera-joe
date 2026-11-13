@@ -67,7 +67,9 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 | **Home** on a bar | Reset its size |
 
 ### When something goes wrong
-If a device won't open, a message under the scopes says why (for example, another app such as OBS has it). **COPY ERROR DETAILS** and **COPY DIAGNOSTICS** copy a report with your devices, their settings and what was tried, ready to paste into a bug report.
+The footer along the bottom shows what the picture is: **LIVE** in green for a working device, **TEST PATTERN** or **FILE** in orange, **NO SIGNAL** in red. Next to it is a live readout of the size, frame rates and scope speed.
+
+**CONSOLE** at the right of the footer opens a log of what happened: events in blue, problems in red (for example, why a device wouldn't open). The button turns red when there's a problem you haven't looked at yet. **COPY LOGS** copies the log; **COPY DIAGNOSTICS** copies a full report with your devices, their settings and the log, ready to paste into a bug report.
 
 A web page or app can't choose the capture format (YUV or MJPEG); the camera system picks it. Resolution and frame rate are the only levers: high frame rates and 4K often make USB cards switch to MJPEG.
 

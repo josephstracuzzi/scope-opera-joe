@@ -3,7 +3,7 @@
 // One window, sandboxed page, context isolation, camera access granted to our own page only.
 // ============================================================================
 
-const { app, BrowserWindow, ipcMain, protocol, net, screen, session, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, screen, session, shell, clipboard } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -108,6 +108,11 @@ function createWindow() {
 }
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('copy-text', (event, text) => {
+    if (typeof text !== 'string' || text.length > 1000000) return false;
+    clipboard.writeText(text);
+    return true;
+});
 ipcMain.handle('get-runtime-info', () => ({
     electron: process.versions.electron,
     chrome: process.versions.chrome,
