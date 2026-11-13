@@ -673,6 +673,19 @@ function drawPattern(t){
     const rg=pc.createRadialGradient(cx,cy,0,cx,cy,r); rg.addColorStop(0,'rgba(128,128,128,1)'); rg.addColorStop(1,'rgba(128,128,128,0)');
     pc.fillStyle=rg; pc.beginPath(); pc.arc(cx,cy,r,0,Math.PI*2); pc.fill();
   }
+  drawPatternLogo(W,H);
+}
+/* The logo on the test pattern, placed like PLAYBACK JOE's: centred, 1000/1920 of the width, 180/1080 down,
+   on a solid black panel so the white and grey lettering reads over the bars. Skipped when the page is
+   opened as a local file, where drawing it would block the scopes from reading the pattern. */
+const patLogo=new Image(); let patLogoOK=false;
+if(location.protocol!=='file:'){ patLogo.onload=()=>{ patLogoOK=true; }; patLogo.src='logo.png'; }
+function drawPatternLogo(W,H){
+  if(!patLogoOK) return;
+  const lw=W*1000/1920, lh=lw*patLogo.naturalHeight/patLogo.naturalWidth;
+  const x=(W-lw)/2, y=H*180/1080, pad=H*30/1080;
+  pc.fillStyle='#000'; pc.fillRect(x-pad,y-pad,lw+2*pad,lh+2*pad);
+  pc.drawImage(patLogo,x,y,lw,lh);
 }
 
 /* ---------- analysis buffers ---------- */
