@@ -57,10 +57,10 @@ input[type=range]:hover::-webkit-slider-thumb{background:#38bdf8}
 /* Picture left, scopes right, with draggable splitters */
 main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 6px var(--sideW,400px);background:var(--bg)}
 .split{cursor:col-resize;background:var(--line);position:relative;touch-action:none}
-.vsplit{height:6px;cursor:row-resize;background:transparent;position:relative;touch-action:none;flex:none;border-radius:3px}
+.vsplit{height:10px;cursor:row-resize;background:transparent;position:relative;touch-action:none;flex:none;border-radius:3px}
 .split::after,.vsplit::after{content:"";position:absolute;background:#555;border-radius:2px}
 .split::after{left:2px;top:50%;width:2px;height:36px;margin-top:-18px}
-.vsplit::after{top:2px;left:50%;height:2px;width:36px;margin-left:-18px}
+.vsplit::after{top:4px;left:50%;height:2px;width:36px;margin-left:-18px}
 .split:hover,.vsplit:hover,.split.drag,.vsplit.drag,.split:focus-visible,.vsplit:focus-visible{background:var(--blue);outline:none}
 .split:hover::after,.vsplit:hover::after,.split.drag::after,.vsplit.drag::after{background:#fff}
 body.resizing{user-select:none}
@@ -78,14 +78,18 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
 .srcvid{position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
 
 /* Each scope is a monitor box: dark title bar over a black picture, like the CUE / PGM monitors */
-.scopes{background:var(--panel);display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;padding:10px 12px 12px}
-.scope{border:2px solid var(--edge);background:#000;border-radius:4px;overflow:hidden;flex-shrink:0}
+.scopes{background:var(--panel);display:flex;flex-direction:column;gap:0;min-height:0;overflow:auto;padding:10px 12px 12px}
+/* Visible scopes share the column height by weight (--grow); the splitters between them move the weights */
+.scope{border:2px solid var(--edge);background:#000;border-radius:4px;overflow:hidden;flex:var(--grow,1) 1 0;min-height:90px;display:flex;flex-direction:column}
+.scope .area{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;background:#050607}
 .scope h2{margin:0;height:31px;padding:0 10px;background:var(--bar);border-bottom:1px solid var(--edge);font-size:11px;font-weight:bold;letter-spacing:.5px;color:#d4d4d4;display:flex;justify-content:space-between;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
 .scope h2 > span:last-child,.scope h2 .hr > span{font-family:var(--font-mono);font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis}
 .scope h2 .hr{display:flex;align-items:center;gap:8px}
 .scope h2 button{font-size:10px;padding:2px 6px}
-.scope canvas{display:block;width:100%;height:auto;background:#050607}
-#vs{width:min(100%,var(--vsW,380px));margin:0 auto}
+.scope h2{flex:none}
+.scope canvas{display:block;position:absolute;inset:0;width:100%;height:100%;background:#050607}
+#vs{position:static;width:auto;height:auto}   /* kept square; sized from its area in the script */
+.status,.msg{flex:none}
 .status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;font-weight:bold;letter-spacing:.5px;color:var(--dim);padding:6px 0 0}
 .status button{padding:4px 8px}
 
@@ -107,6 +111,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
   body{overflow:auto}
   main,main.nopreview,main.noscopes{grid-template-columns:1fr;grid-auto-rows:auto}
   .split,.vsplit{display:none}
+  .scope{flex:none;height:320px}
   .monitor{min-height:240px}
 }
 </style>
@@ -189,10 +194,9 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
   </section>
   <div class="split" id="split" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Resize preview and scopes" title="Drag to resize · double-click to reset"></div>
   <aside class="scopes" id="side">
-    <div class="scope" id="vsBox"><h2>Vectorscope <span>BT.709 · 75% targets</span></h2><canvas id="vs" width="512" height="512"></canvas></div>
-    <div class="vsplit" id="vsplit" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Resize vectorscope" title="Drag to resize · double-click to reset"></div>
-    <div class="scope" id="wfBox"><h2>Luma waveform <span>BT.709 Y · 0–100%</span></h2><canvas id="wf" width="812" height="276"></canvas></div>
-    <div class="scope" id="parBox"><h2><span id="parTitle">RGB parade</span><span class="hr"><span>0–100%</span><button id="parStack" aria-pressed="false" title="Overlay red, green and blue in one panel">Stack</button></span></h2><canvas id="parade" width="812" height="276"></canvas></div>
+    <div class="scope" id="vsBox" data-key="vs"><h2>Vectorscope <span>BT.709 · 75% targets</span></h2><div class="area"><canvas id="vs" width="512" height="512"></canvas></div></div>
+    <div class="scope" id="wfBox" data-key="wf"><h2>Luma waveform <span>BT.709 Y · 0–100%</span></h2><div class="area"><canvas id="wf" width="812" height="276"></canvas></div></div>
+    <div class="scope" id="parBox" data-key="par"><h2><span id="parTitle">RGB parade</span><span class="hr"><span>0–100%</span><button id="parStack" aria-pressed="false" title="Overlay red, green and blue in one panel">Stack</button></span></h2><div class="area"><canvas id="parade" width="812" height="276"></canvas></div></div>
     <div class="status"><span id="status">waiting for a source</span><button id="copyDiag">Copy diagnostics</button></div>
     <div class="msg" id="msg" hidden>
       <div id="msgText"></div>
@@ -301,19 +305,60 @@ new ResizeObserver(fitStage).observe($('monitor'));
 /* ---------- resizable layout ---------- */
 const mainEl=$('main'), side=$('side'), vsEl=$('vs');
 const LAYOUT_KEY='captureScopes.layout';
-const DEF={side:400, vs:380};
+const DEF_HEIGHTS={vs:1.4, wf:1, par:1};          // share of the scope column each scope gets
+const DEF={side:400};
 let layout={...DEF};
 try{ Object.assign(layout, JSON.parse(localStorage.getItem(LAYOUT_KEY)||'{}')); }catch(e){}
+layout.heights={...DEF_HEIGHTS, ...(layout.heights||{})};
+delete layout.vs;                                   // old vectorscope-width setting (before 1.16.0)
 const saveLayout=()=>{ try{ localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout)); }catch(e){} };
+const scopeBoxes=[...side.querySelectorAll('.scope')];
 function setSide(px){
   px=Math.round(Math.max(260,Math.min(window.innerWidth-320,px)));
   layout.side=px; mainEl.style.setProperty('--sideW',px+'px'); fitStage();
 }
-function setVs(px){
-  const max=Math.max(160,side.clientWidth-24);
-  px=Math.round(Math.max(140,Math.min(max,px)));
-  layout.vs=px; mainEl.style.setProperty('--vsW',px+'px');
+function applyHeights(){ scopeBoxes.forEach(b=>b.style.setProperty('--grow',layout.heights[b.dataset.key])); }
+function resetHeights(){ layout.heights={...DEF_HEIGHTS}; applyHeights(); saveLayout(); }
+const MIN_SCOPE_H=90;
+/* A splitter between two visible scopes moves height from one to the other; the rest stay put.
+   Heights are weights, so the split keeps its proportions when the window is resized. */
+function makeScopeSplit(a,b){
+  const s=document.createElement('div');
+  s.className='vsplit'; s.tabIndex=0; s.setAttribute('role','separator'); s.setAttribute('aria-orientation','horizontal');
+  const ka=a.dataset.key, kb=b.dataset.key, names={vs:'vectorscope',wf:'waveform',par:'parade'};
+  s.setAttribute('aria-label','Resize '+names[ka]+' and '+names[kb]);
+  s.title='Drag to resize · double-click to reset';
+  function moveBy(dy,start){
+    const total=start.ha+start.hb, ha=Math.max(MIN_SCOPE_H,Math.min(total-MIN_SCOPE_H,start.ha+dy));
+    const w=start.wa+start.wb;
+    layout.heights[ka]=w*ha/total; layout.heights[kb]=w*(total-ha)/total; applyHeights();
+  }
+  const snapshot=()=>({ha:a.getBoundingClientRect().height, hb:b.getBoundingClientRect().height, wa:layout.heights[ka], wb:layout.heights[kb]});
+  let start=null, y0=0;
+  s.addEventListener('pointerdown',e=>{ start=snapshot(); y0=e.clientY; });
+  makeDrag(s,'row',e=>{ if(start) moveBy(e.clientY-y0,start); });
+  s.ondblclick=resetHeights;
+  s.onkeydown=e=>{ const d={ArrowDown:24,ArrowUp:-24}[e.key];
+    if(d){ e.preventDefault(); moveBy(d,snapshot()); saveLayout(); } else if(e.key==='Home'){ resetHeights(); } };
+  return s;
 }
+function rebuildScopeSplits(){
+  side.querySelectorAll('.vsplit').forEach(s=>s.remove());
+  const shown=scopeBoxes.filter(b=>!b.hidden);
+  for(let i=0;i<shown.length-1;i++) shown[i].after(makeScopeSplit(shown[i],shown[i+1]));
+}
+/* Waveform and parade canvases match their box at screen resolution, so labels stay sharp at any size.
+   The vectorscope stays square (512 internal) and is fitted inside its box. */
+const DPR=()=>window.devicePixelRatio||1;
+function fitScopeCanvases(){
+  ['wf','parade'].forEach(id=>{ const c=$(id), a=c.parentElement;
+    const w=Math.max(1,Math.round(a.clientWidth*DPR())), h=Math.max(1,Math.round(a.clientHeight*DPR()));
+    if(c.width!==w||c.height!==h){ c.width=w; c.height=h; } });
+  const a=vsEl.parentElement, s=Math.max(0,Math.min(a.clientWidth,a.clientHeight)-8);
+  vsEl.style.width=vsEl.style.height=s+'px';
+}
+const scopeRO=new ResizeObserver(fitScopeCanvases);
+scopeBoxes.forEach(b=>scopeRO.observe(b.querySelector('.area')));
 function makeDrag(handle,axis,onMove){
   handle.addEventListener('pointerdown',e=>{
     e.preventDefault(); handle.setPointerCapture(e.pointerId);
@@ -325,12 +370,9 @@ function makeDrag(handle,axis,onMove){
   });
 }
 makeDrag($('split'),'col',e=>setSide(mainEl.getBoundingClientRect().right-e.clientX-4));
-makeDrag($('vsplit'),'row',e=>setVs(e.clientY-vsEl.getBoundingClientRect().top-4));
 $('split').ondblclick=()=>{ setSide(DEF.side); saveLayout(); };
-$('vsplit').ondblclick=()=>{ setVs(DEF.vs); saveLayout(); };
 $('split').onkeydown=e=>{ const d={ArrowLeft:24,ArrowRight:-24}[e.key]; if(d){ e.preventDefault(); setSide(layout.side+d); saveLayout(); } else if(e.key==='Home'){ setSide(DEF.side); saveLayout(); } };
-$('vsplit').onkeydown=e=>{ const d={ArrowDown:24,ArrowUp:-24}[e.key]; if(d){ e.preventDefault(); setVs(layout.vs+d); saveLayout(); } else if(e.key==='Home'){ setVs(DEF.vs); saveLayout(); } };
-setSide(layout.side); setVs(layout.vs);
+setSide(layout.side); applyHeights();
 
 /* ---------- show / hide windows ---------- */
 const views={preview:true,vs:true,wf:true,par:true, ...(layout.views||{})};
@@ -341,16 +383,16 @@ function applyViews(){
   mainEl.classList.toggle('noscopes',!anyScope);
   $('vsBox').hidden=!views.vs; $('parBox').hidden=!views.par;
   $('wfBox').hidden=!views.wf;
-  $('vsplit').hidden=!(views.vs&&(views.wf||views.par));
+  rebuildScopeSplits();
   [['vPreview','preview'],['vVs','vs'],['vWf','wf'],['vPar','par']].forEach(([b,k])=>toggle($(b),views[k]));
   layout.views={...views}; saveLayout();
-  requestAnimationFrame(()=>{ fitStage(); if(views.vs) setVs(layout.vs); });
+  requestAnimationFrame(()=>{ fitStage(); fitScopeCanvases(); });
 }
 $('vPreview').onclick=()=>{ views.preview=!views.preview; applyViews(); };
 $('vVs').onclick=()=>{ views.vs=!views.vs; applyViews(); };
 $('vPar').onclick=()=>{ views.par=!views.par; applyViews(); };
 $('vWf').onclick=()=>{ views.wf=!views.wf; applyViews(); };
-window.addEventListener('resize',()=>{ setSide(layout.side); setVs(layout.vs); });
+window.addEventListener('resize',()=>{ setSide(layout.side); });
 
 /* ---------- sources ---------- */
 async function scan(){
@@ -578,20 +620,21 @@ function drawParade(d){
     }
   }
   pTctx.putImageData(pImg,0,0);
-  const L=32, T=10, G=8, cw=pac.canvas.width, ch=pac.canvas.height, panelW=(cw-L-8-2*G)/3, panelH=ch-T-10;
+  // Canvas is screen-sized (see fitScopeCanvases): margins and text are in CSS pixels times k
+  const k=DPR(), L=26*k, T=8*k, R=6*k, G=6*k, cw=pac.canvas.width, ch=pac.canvas.height, panelW=(cw-L-R-2*G)/3, panelH=ch-T-8*k;
   pac.fillStyle='#050607'; pac.fillRect(0,0,cw,ch);
-  pac.font='11px '+css('--font-mono'); pac.textAlign='right'; pac.textBaseline='middle';
+  pac.font=(10*k)+'px '+css('--font-mono'); pac.textAlign='right'; pac.textBaseline='middle';
   [0,25,50,75,100].forEach(p=>{
     const y=T+panelH*(1-p/100);
     pac.strokeStyle=p===0||p===100?'rgba(215,220,227,.28)':'rgba(215,220,227,.12)';
-    pac.beginPath(); pac.moveTo(L,y+.5); pac.lineTo(cw-8,y+.5); pac.stroke();
-    pac.fillStyle='rgba(215,220,227,.55)'; pac.fillText(p,L-6,y);
+    pac.beginPath(); pac.moveTo(L,y+.5); pac.lineTo(cw-R,y+.5); pac.stroke();
+    pac.fillStyle='rgba(215,220,227,.55)'; pac.fillText(p,L-5*k,y);
   });
   pac.imageSmoothingEnabled=true;
   if(stacked){
     // One full-width panel; channels add together, so where R, G and B coincide the trace reads white.
     pac.globalCompositeOperation='lighter';
-    for(let c=0;c<3;c++) pac.drawImage(pTmp,c*PW,0,PW,PH,L,T,cw-L-8,panelH);
+    for(let c=0;c<3;c++) pac.drawImage(pTmp,c*PW,0,PW,PH,L,T,cw-L-R,panelH);
     pac.globalCompositeOperation='source-over';
   } else {
     for(let c=0;c<3;c++) pac.drawImage(pTmp,c*PW,0,PW,PH,L+c*(panelW+G),T,panelW,panelH);
@@ -618,14 +661,14 @@ function drawWaveform(d){
     w32[i]=pack(150*v|0, 255*v|0, 170*v|0, Math.min(255,v*420)|0);
   }
   wTctx.putImageData(wImg,0,0);
-  const L=32, T=10, cw=wfc.canvas.width, ch=wfc.canvas.height, panelW=cw-L-8, panelH=ch-T-10;
+  const k=DPR(), L=26*k, T=8*k, R=6*k, cw=wfc.canvas.width, ch=wfc.canvas.height, panelW=cw-L-R, panelH=ch-T-8*k;
   wfc.fillStyle='#050607'; wfc.fillRect(0,0,cw,ch);
-  wfc.font='11px '+css('--font-mono'); wfc.textAlign='right'; wfc.textBaseline='middle';
+  wfc.font=(10*k)+'px '+css('--font-mono'); wfc.textAlign='right'; wfc.textBaseline='middle';
   [0,10,20,30,40,50,60,70,80,90,100].forEach(p=>{
     const y=T+panelH*(1-p/100), major=p%25===0||p===100;
     wfc.strokeStyle=p===0||p===100?'rgba(215,220,227,.28)':major?'rgba(215,220,227,.14)':'rgba(215,220,227,.06)';
-    wfc.beginPath(); wfc.moveTo(L,y+.5); wfc.lineTo(cw-8,y+.5); wfc.stroke();
-    if(p%20===0||p===100){ wfc.fillStyle='rgba(215,220,227,.55)'; wfc.fillText(p,L-6,y); }
+    wfc.beginPath(); wfc.moveTo(L,y+.5); wfc.lineTo(cw-R,y+.5); wfc.stroke();
+    if(p%20===0||p===100){ wfc.fillStyle='rgba(215,220,227,.55)'; wfc.fillText(p,L-5*k,y); }
   });
   wfc.imageSmoothingEnabled=true;
   wfc.drawImage(wTmp,0,0,PW,PH,L,T,panelW,panelH);
