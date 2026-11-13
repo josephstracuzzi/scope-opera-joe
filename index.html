@@ -137,7 +137,8 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
   </div>
   <div class="grp">
     <button id="peak" aria-pressed="false">Peaking</button>
-    <input type="range" id="peakS" min="1" max="100" value="55" aria-label="Peaking sensitivity">
+    <input type="range" id="peakS" min="1" max="100" value="35" aria-label="Peaking sensitivity">
+    <span class="val" id="peakV">35%</span>
     <select id="peakC" aria-label="Peaking colour">
       <option value="255,40,40">Red</option><option value="40,255,90">Green</option>
       <option value="60,140,255">Blue</option><option value="255,230,0">Yellow</option><option value="255,255,255">White</option>
@@ -235,7 +236,13 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !aboutEl.hidden)
 
 /* ---------- sliders: blue fill up to the knob ---------- */
 function fillSlider(r){ r.style.setProperty('--pct',((r.value-r.min)/(r.max-r.min)*100)+'%'); }
-document.querySelectorAll('input[type=range]').forEach(r=>{ fillSlider(r); r.addEventListener('input',()=>fillSlider(r)); });
+// Double-click any slider to put it back to its default (the value it starts with in the HTML).
+// Sending an input event lets each slider's own handler update its readout and settings.
+document.querySelectorAll('input[type=range]').forEach(r=>{
+  fillSlider(r); r.addEventListener('input',()=>fillSlider(r));
+  r.title=(r.title?r.title+' · ':'')+'Double-click: reset to '+r.defaultValue+(r.id==='gain'?'':'%');
+  r.addEventListener('dblclick',()=>{ r.value=r.defaultValue; r.dispatchEvent(new Event('input',{bubbles:true})); });
+});
 let stream=null, source='test', zebOn=true, peakOn=false;
 
 /* ---------- helpers ---------- */
@@ -446,6 +453,7 @@ applyViews();
 $('zeb').onclick=()=>{ zebOn=!zebOn; toggle($('zeb'),zebOn); };
 $('peak').onclick=()=>{ peakOn=!peakOn; toggle($('peak'),peakOn); };
 $('zebT').oninput=e=>$('zebV').textContent=e.target.value+'%';
+$('peakS').oninput=e=>$('peakV').textContent=e.target.value+'%';
 $('fs').onclick=()=>{ const m=$('monitor'); (document.fullscreenElement?document.exitFullscreen():m.requestFullscreen?.())?.catch?.(()=>{}); };
 
 /* ---------- test pattern ---------- */
