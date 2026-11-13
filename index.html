@@ -155,6 +155,7 @@ button.icon svg .fill{fill:currentColor;stroke:none}
 /* Footer: always across the bottom of the window, so it never moves when panels are resized */
 footer{flex:none;display:flex;align-items:center;gap:12px;padding:6px 16px;border-top:1px solid var(--line);background:var(--panel);font-family:var(--font-mono);font-size:10px;font-weight:bold;letter-spacing:.5px;color:var(--dim)}
 footer #status{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+footer #status .warn{color:#f97316}
 footer button{padding:4px 10px}
 /* Source badge in PLAYBACK JOE's colours: green = live (on air), orange = test pattern / file (cued,
    not live), red = no signal, grey = connecting */
@@ -336,7 +337,7 @@ function showVersion(){
   document.querySelectorAll('[data-app-version]').forEach(el=>el.textContent=VERSION==='dev'?'DEV':'v'+VERSION);
 }
 showVersion();
-api?.getAppVersion?.().then(v=>{ VERSION=v; showVersion(); log('Scope Opera Joe v'+v+' started'); if(!stream && source==='test') $('status').textContent=VERSION+' · waiting for a source'; });
+api?.getAppVersion?.().then(v=>{ VERSION=v; showVersion(); log('Scope Opera Joe v'+v+' started'); });
 const css=name=>getComputedStyle(document.body).getPropertyValue(name);
 const vid=$('vid'), pat=$('pattern'), view=$('view'), stage=$('stage');
 $('status').textContent='waiting for a source';
@@ -623,7 +624,7 @@ function noSignal(id,label){
   stopStream(); vid.pause(); vid.srcObject=null; source='none';
   placeholder('NO SIGNAL',true); showAllRes();
   clearScopes();
-  $('status').textContent=VERSION+' · no signal · '+label;
+  $('status').textContent=label;   // the badge beside it says NO SIGNAL
 }
 
 /* Every pick (device, test pattern, file) gets a number. A device that answers after the user has picked
@@ -635,7 +636,7 @@ async function useDevice(id){
   const my=++openSeq;
   const label=$('src').selectedOptions[0]?.textContent||'';
   source='connecting'; showFileUI(null); placeholder('spinner'); clearScopes();
-  $('status').textContent=VERSION+' · connecting · '+label;
+  $('status').textContent=label;   // the badge beside it says CONNECTING
   // Some devices take a long time to answer (NDI Webcam with no source picked waits 10 s before failing).
   // After 4 s say NO SIGNAL, but keep trying behind it: if the device starts sending, the picture appears.
   setTimeout(()=>{ if(my===openSeq && source==='connecting'){ placeholder('NO SIGNAL',true); clearScopes(); } },4000);
@@ -1175,7 +1176,13 @@ function frame(t){
     frames++;
     if(t-last>1000){ fps=frames*1000/(t-last); const sfps=scopeFrames*1000/(t-last); frames=0; scopeFrames=0; last=t;
       const s=stream?.getVideoTracks()[0]?.getSettings();
-      $("status").textContent=`${VERSION} · ${w}×${h}${s?.frameRate?' @ '+s.frameRate.toFixed(2)+' fps in':''} · picture ${fps.toFixed(0)} fps · scopes ${sfps.toFixed(0)} fps · ${source==='test'?'test pattern':source==='file'?'file':'live'}`;
+      // INPUT: size @ frame rate coming in. REDRAW: picture / scopes updates per second. (The version and the
+      // kind of source are shown elsewhere: header badge, footer badge.) The picture rate turns orange when it
+      // can't keep up with the input.
+      const inFps=s?.frameRate || (source==='file'?fileFps:0);
+      const pic=fps.toFixed(0), slow=inFps && fps<inFps-2;
+      $('status').innerHTML='Input: '+w+'×'+h+(inFps?' @ '+inFps.toFixed(2)+' fps':'')
+        +' · Redraw: '+(slow?'<span class="warn">'+pic+'</span>':pic)+' / '+sfps.toFixed(0)+' fps';
     }
   }
 }
