@@ -72,6 +72,11 @@ main.noscopes .scopes{border-top:1px solid var(--line)}
 main.nopreview.noscopes{grid-template-rows:auto}
 body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
 .monitor{background:#000;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:12px}
+/* NO SIGNAL / CONNECTING over the picture area, like PLAYBACK JOE's monitor placeholders */
+.monitor.blank .stage{visibility:hidden}
+.placeholder{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0 16px;text-align:center;font-family:var(--font-mono);font-weight:bold;letter-spacing:1px}
+.placeholder .ph-title{font-size:22px;color:#a3a3a3}
+.placeholder.is-error .ph-title{color:#f87171}
 .stage{position:relative;max-width:100%;max-height:100%;aspect-ratio:16/9;width:100%;background:#000}
 .stage #view{position:absolute;inset:0;width:100%;height:100%}
 .stage #guides{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -185,6 +190,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
 </header>
 <main id="main">
   <section class="monitor" id="monitor">
+    <div class="placeholder" id="ph" hidden><div class="ph-title" id="phTitle"></div></div>
     <div class="stage" id="stage">
       <canvas id="view" width="960" height="540"></canvas>
       <canvas id="guides"></canvas>
@@ -351,9 +357,12 @@ function rebuildScopeSplits(){
    The vectorscope stays square (512 internal) and is fitted inside its box. */
 const DPR=()=>window.devicePixelRatio||1;
 function fitScopeCanvases(){
+  let resized=false;
   ['wf','parade'].forEach(id=>{ const c=$(id), a=c.parentElement;
     const w=Math.max(1,Math.round(a.clientWidth*DPR())), h=Math.max(1,Math.round(a.clientHeight*DPR()));
-    if(c.width!==w||c.height!==h){ c.width=w; c.height=h; } });
+    if(c.width!==w||c.height!==h){ c.width=w; c.height=h; resized=true; } });
+  // Resizing wipes a canvas; with no frames coming in, put the empty scale back
+  if(resized && (source==='none'||source==='connecting')) clearScopes();
   const a=vsEl.parentElement, s=Math.max(0,Math.min(a.clientWidth,a.clientHeight)-8);
   vsEl.style.width=vsEl.style.height=s+'px';
 }
@@ -417,10 +426,28 @@ async function scan(){
   if([...sel.options].some(o=>o.value===keep)) sel.value=keep;
   msg(devs.length? '' : 'No video devices found. Check the capture card is plugged in and not open in another app (OBS etc.).');
 }
-function stopStream(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
+function stopStream(){ if(stream){ stream.getTracks().forEach(t=>{ t.onended=null; t.stop(); }); stream=null; } }
+
+/* ---------- NO SIGNAL / CONNECTING in the picture area ---------- */
+function placeholder(title,error=false){
+  const ph=$('ph'), on=!!title;
+  ph.hidden=!on; $('monitor').classList.toggle('blank',on);
+  if(on){ $('phTitle').textContent=title; ph.classList.toggle('is-error',error); }
+}
+const EMPTY=new Uint8ClampedArray(0);
+function clearScopes(){ drawVectorscope(EMPTY); drawWaveform(EMPTY); drawParade(EMPTY); }
+// The device is still selected, but nothing comes from it: blank picture and scopes, say so.
+function noSignal(id,label){
+  stopStream(); vid.pause(); vid.srcObject=null; source='none';
+  placeholder('NO SIGNAL',true);
+  clearScopes();
+  $('status').textContent=VERSION+' · no signal · '+label;
+}
+
 async function useDevice(id){
   stopStream();
   const label=$('src').selectedOptions[0]?.textContent||'';
+  source='connecting'; placeholder('CONNECTING…'); clearScopes();
   const [w,h]=$('res').value.split('x').map(Number);
   const log=[];
   const note=(what,e)=>log.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
@@ -448,8 +475,10 @@ async function useDevice(id){
     stream=await tryId(id);
     // Device IDs can change between calls (common when the page is opened as a local file): look the card up again by name.
     if(!stream){ const d=await findByLabel(); if(d&&d.deviceId&&d.deviceId!==id){ log.push('re-found by name'); stream=await tryId(d.deviceId); } }
-    // Last resort: open any camera to unlock fresh IDs, then switch to the card by name.
-    if(!stream){
+    // Last resort, only for placeholder IDs (a browser that hides device IDs): open any camera to unlock
+    // fresh IDs, then switch to the card by name. With real IDs this would show some other camera as if
+    // it were the chosen one, so a real ID that won't open is reported as NO SIGNAL instead.
+    if(!stream && (!id || id.startsWith('idx:'))){
       const any=await open(true,'any camera');
       if(any){
         const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
@@ -469,16 +498,19 @@ async function useDevice(id){
     else if(unreadable && virtual) why='It is a virtual camera that isn\'t sending video yet. Switch it on in its own app (in OBS: Start Virtual Camera; in vMix: turn on the External output; for NDI Webcam: pick an NDI source), then choose it again. ';
     else if(unreadable) why='Windows could not read video from it. Another app may be using it (Zoom, Teams, OBS, the device\'s own software), or it has no signal. ';
     msg('Could not open "'+label+'". '+why+'Tried: '+log.join(' · '));
-    useTest(); return;
+    noSignal(id,label); return;
   }
+  // Unplugged, or the virtual camera was stopped in its app
+  const track=stream.getVideoTracks()[0];
+  if(track) track.onended=()=>{ if(stream?.getVideoTracks()[0]===track){ errLog.push(new Date().toISOString().slice(11,19)+'  "'+label+'" stopped sending video'); noSignal(id,label); } };
   vid.srcObject=stream; vid.removeAttribute('src');
   await vid.play().catch(()=>{});
-  source='device'; msg('');
+  source='device'; msg(''); placeholder(null);
   layout.lastDevice=label; layout.lastId=id; saveLayout();
 }
-function useTest(){ stopStream(); vid.pause(); vid.srcObject=null; source='test'; $('src').value='test'; setStageAspect(16,9); fitStage(); }
+function useTest(){ stopStream(); vid.pause(); vid.srcObject=null; source='test'; placeholder(null); $('src').value='test'; setStageAspect(16,9); fitStage(); }
 function useFile(f){
-  stopStream(); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=true;
+  stopStream(); placeholder(null); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=true;
   vid.play().catch(()=>{}); source='file';
   const sel=$('src'); if(![...sel.options].some(o=>o.value==='file')){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
   sel.value='file'; msg('');
@@ -488,7 +520,7 @@ $('scan').onclick=scan;
 ['copyErr','copyDiag'].forEach(id=>{ const b=$(id); b.dataset.label=b.textContent; b.onclick=()=>copyDiagnostics(b); });
 $('hideMsg').onclick=()=>{ msgEl.hidden=true; };
 $('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file') vid.play(); else useDevice(v); };
-$('res').onchange=$('fps').onchange=()=>{ if(source==='device') useDevice($('src').value); };
+$('res').onchange=$('fps').onchange=()=>{ if(source==='device'||source==='none') useDevice($('src').value); };
 $('openfile').onclick=()=>$('file').click();
 $('file').onchange=e=>{ if(e.target.files[0]) useFile(e.target.files[0]); };
 if(navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange',()=>{ if($('src').options.length>1) scan(); });
@@ -608,7 +640,7 @@ function drawVectorscope(d){
 /* ---------- RGB parade ---------- */
 function drawParade(d){
   parHist.fill(0);
-  for(let y=0;y<SH;y++){
+  if(d.length) for(let y=0;y<SH;y++){   // an empty frame (no signal) draws just the scale
     for(let x=0;x<SW;x++){
       const i=(y*SW+x)*4, col=x>>1;
       parHist[(255-d[i])*PW+col]++;
@@ -656,7 +688,7 @@ const wTctx=wTmp.getContext('2d'); const wImg=wTctx.createImageData(PW,PH), w32=
 const wfc=$('wf').getContext('2d');
 function drawWaveform(d){
   wfHist.fill(0);
-  for(let y=0;y<SH;y++){
+  if(d.length) for(let y=0;y<SH;y++){
     for(let x=0;x<SW;x++){
       const i=(y*SW+x)*4;
       const Y=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]+0.5)|0;
@@ -817,7 +849,7 @@ let frames=0, last=performance.now(), fps=0, scopeTick=0, scopeEvery=1, scopeFra
 function tick(t){
   let el=null, w=0, h=0;
   if(source==='test'){ drawPattern(t); el=pat; w=960; h=540; }
-  else if(vid.readyState>=2){ el=vid; w=vid.videoWidth; h=vid.videoHeight; }
+  else if((source==='device'||source==='file') && vid.readyState>=2){ el=vid; w=vid.videoWidth; h=vid.videoHeight; }
   if(el){
     if(views.preview) renderView(el,w,h,t);
     // Scopes run on the CPU; skip frames if they can't keep up so the picture stays smooth.
