@@ -46,7 +46,32 @@ header{display:flex;flex-direction:column;gap:6px;padding:10px 16px;border-botto
 .chip{background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:6px 10px;font-family:var(--font-ui);font-size:10px;font-weight:bold;letter-spacing:.5px;line-height:13px;white-space:nowrap;cursor:default}
 .ctl .end{margin-left:auto;margin-right:0}
 .ctl .fs{margin-left:10px}   /* a little apart from the SHOW buttons */
+/* The source list gives up room first: long device names are cut with "…" (full name when it's open) */
 #src{flex:0 1 260px;min-width:140px;max-width:300px}
+.hrow > .ctl{flex-wrap:nowrap}
+.hrow > .ctl > *{flex-shrink:0}
+.hrow > .ctl > #src{flex-shrink:1}
+.hrow > .ctl .views{flex-wrap:nowrap}
+button.icon{padding:0;width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center}
+button.icon svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+/* Narrower windows (down to the 1100 px minimum): smaller logo, slimmer buttons and sliders, tighter gaps,
+   so both header rows stay on one line each */
+@media (max-width:1400px){
+  /* "header" in front so these win over the general button / slider styles further down */
+  header .header-logo{height:22px}
+  header .brand{gap:6px}
+  header .hrow{gap:14px}
+  header button,header .chip{padding:6px 7px}
+  header button.icon{padding:0}
+  header select{padding:0 4px}
+  header input[type=range]{width:60px}
+  header .val{min-width:2.6em}
+  header .ctl{gap:5px}
+  header .ctl .grp{gap:5px;margin-right:8px}
+  header .ctl.one-row .pic{gap:12px}
+  header .ctl.one-row .pic > span{gap:5px}
+  header .ctl .fs{margin-left:6px}
+}
 .header-logo{height:30px;width:auto;display:block;cursor:pointer}
 .header-logo:hover{opacity:.85}
 .version-badge{background:var(--blue);color:#fff;font-size:9px;padding:2px 6px;border-radius:3px;font-weight:bold;letter-spacing:.5px;cursor:pointer;white-space:nowrap}
@@ -157,7 +182,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
         <button id="vVs" class="on" aria-pressed="true">Vectorscope</button>
         <button id="vWf" class="on" aria-pressed="true">Waveform</button>
         <button id="vPar" class="on" aria-pressed="true">Parade</button>
-        <button id="fs" class="fs">Fullscreen</button>
+        <button id="fs" class="fs icon" title="Fullscreen picture" aria-label="Fullscreen"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 5.5v-4h4M10.5 1.5h4v4M14.5 10.5v4h-4M5.5 14.5h-4v-4"/></svg></button>
       </span>
     </div>
   </div>
