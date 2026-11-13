@@ -15,7 +15,7 @@ const out = outArg ? path.resolve(outArg.slice(6)) : path.join(__dirname, '..', 
 app.setVersion(require('../package.json').version);
 app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
-app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'scope-opera-joe-shot-')));
+process.env.SOJ_USER_DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-opera-joe-shot-'));
 
 require('../main.js');
 

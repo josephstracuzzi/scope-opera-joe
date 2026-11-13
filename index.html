@@ -116,12 +116,24 @@ main.noscopes .split{display:none}
 main.noscopes .scopes{border-top:1px solid var(--line)}
 main.nopreview.noscopes{grid-template-rows:auto}
 body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
-.monitor{background:#000;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:12px}
+.monitor{background:#000;display:flex;flex-direction:column;position:relative;min-height:0;padding:12px;gap:10px}
+.picture{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center}
+.framebox{display:flex;flex-direction:column;align-items:stretch;gap:4px;max-width:100%}
+/* File name just above the picture */
+.vtitle{font-size:12px;font-weight:bold;letter-spacing:.5px;color:#d4d4d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:16px}
+/* Transport bar under the picture (video files only), PLAYBACK JOE style: white elapsed, red remaining */
+.transport{display:flex;align-items:center;gap:6px;flex:none}
+.transport .tc{font-family:var(--font-mono);font-size:14px;font-weight:bold;font-variant-numeric:tabular-nums;color:#fff;white-space:nowrap}
+.transport .tc.rem{color:#ef4444}
+.transport input[type=range].scrub{flex:1;width:auto;min-width:80px}
+button.icon svg .fill{fill:currentColor;stroke:none}
 /* NO SIGNAL / CONNECTING over the picture area, like PLAYBACK JOE's monitor placeholders */
 .monitor.blank .stage{visibility:hidden}
 .placeholder{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0 16px;text-align:center;font-family:var(--font-mono);font-weight:bold;letter-spacing:1px}
 .placeholder .ph-title{font-size:22px;color:#a3a3a3}
 .placeholder.is-error .ph-title{color:#f87171}
+.spinner{width:44px;height:44px;border-radius:50%;border:4px solid #333;border-top-color:var(--blue);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .stage{position:relative;max-width:100%;max-height:100%;aspect-ratio:16/9;width:100%;background:#000}
 .stage #view{position:absolute;inset:0;width:100%;height:100%}
 .stage #guides{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -234,12 +246,27 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
 </header>
 <main id="main">
   <section class="monitor" id="monitor">
-    <div class="placeholder" id="ph" hidden><div class="ph-title" id="phTitle"></div></div>
-    <div class="stage" id="stage">
-      <canvas id="view" width="960" height="540"></canvas>
-      <canvas id="guides"></canvas>
-      <video id="vid" class="srcvid" playsinline muted></video>
-      <canvas id="pattern" width="960" height="540" hidden></canvas>
+    <div class="picture" id="picture">
+      <div class="placeholder" id="ph" hidden><div class="ph-title" id="phTitle"></div><div class="spinner" id="phSpin" role="status" aria-label="Connecting" hidden></div></div>
+      <div class="framebox">
+        <div class="vtitle" id="vTitle" hidden></div>
+        <div class="stage" id="stage">
+          <canvas id="view" width="960" height="540"></canvas>
+          <canvas id="guides"></canvas>
+          <video id="vid" class="srcvid" playsinline muted></video>
+          <canvas id="pattern" width="960" height="540" hidden></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Transport for a video file: frame back, play/pause, frame forward, elapsed, scrub bar, remaining, loop -->
+    <div class="transport" id="transport" role="group" aria-label="Video file transport" hidden>
+      <button id="tPrev" class="icon" title="Previous frame (←)" aria-label="Previous frame"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M3 2.5h2v11H3zM13 2.5v11L6 8z"/></svg></button>
+      <button id="tPlay" class="icon" title="Play / pause (Space)" aria-label="Play"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="fill" id="tPlayIcon" d="M4 2.5v11L13 8z"/></svg></button>
+      <button id="tNext" class="icon" title="Next frame (→)" aria-label="Next frame"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M11 2.5h2v11h-2zM3 2.5v11L10 8z"/></svg></button>
+      <span class="tc" id="tcNow">00:00:00:00</span>
+      <input type="range" id="tScrub" class="scrub" min="0" max="1000" step="1" value="0" data-noreset aria-label="Position in the video">
+      <span class="tc rem" id="tcLeft">-00:00:00:00</span>
+      <button id="tLoop" class="on" aria-pressed="true" title="Loop the video">Loop</button>
     </div>
   </section>
   <div class="split" id="split" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Resize preview and scopes" title="Drag to resize · double-click to reset"></div>
@@ -294,6 +321,7 @@ function fillSlider(r){ r.style.setProperty('--pct',((r.value-r.min)/(r.max-r.mi
 // Sending an input event lets each slider's own handler update its readout and settings.
 document.querySelectorAll('input[type=range]').forEach(r=>{
   fillSlider(r); r.addEventListener('input',()=>fillSlider(r));
+  if(r.dataset.noreset!==undefined) return;   // the video scrub bar has no "default"
   r.title=(r.title?r.title+' · ':'')+'Double-click: reset to '+r.defaultValue+(r.id==='gain'?'':'%');
   r.addEventListener('dblclick',()=>{ r.value=r.defaultValue; r.dispatchEvent(new Event('input',{bubbles:true})); });
 });
@@ -343,14 +371,15 @@ async function copyDiagnostics(btn){
 }
 function setStageAspect(w,h){ if(w&&h) stage.style.aspectRatio=w+'/'+h; }
 function fitStage(){
-  const m=$('monitor'), r=m.getBoundingClientRect();
+  const r=$('picture').getBoundingClientRect();
   const [w,h]=(stage.style.aspectRatio||'16/9').split('/').map(Number);
-  const avW=r.width-24, avH=r.height-24;
+  const title=$('vTitle'), titleH=title.hidden?0:title.offsetHeight+4;
+  const avW=r.width, avH=r.height-titleH;
   const s=Math.min(avW/w, avH/h);
   stage.style.width=Math.max(0,w*s)+'px'; stage.style.height=Math.max(0,h*s)+'px';
   requestAnimationFrame(()=>drawGuides());
 }
-new ResizeObserver(fitStage).observe($('monitor'));
+new ResizeObserver(fitStage).observe($('picture'));
 
 /* ---------- resizable layout ---------- */
 const mainEl=$('main'), side=$('side'), vsEl=$('vs');
@@ -522,10 +551,13 @@ showAllRes();
 function stopStream(){ if(stream){ stream.getTracks().forEach(t=>{ t.onended=null; t.stop(); }); stream=null; } }
 
 /* ---------- NO SIGNAL / CONNECTING in the picture area ---------- */
+// placeholder('NO SIGNAL',true) shows text; placeholder('spinner') the loading circle; placeholder(null) clears
 function placeholder(title,error=false){
-  const ph=$('ph'), on=!!title;
+  const ph=$('ph'), on=!!title, spin=title==='spinner';
   ph.hidden=!on; $('monitor').classList.toggle('blank',on);
-  if(on){ $('phTitle').textContent=title; ph.classList.toggle('is-error',error); }
+  if(!on) return;
+  $('phTitle').textContent=spin?'':title; $('phTitle').hidden=spin; $('phSpin').hidden=!spin;
+  ph.classList.toggle('is-error',error);
 }
 const EMPTY=new Uint8ClampedArray(0);
 function clearScopes(){ drawVectorscope(EMPTY); drawWaveform(EMPTY); drawParade(EMPTY); }
@@ -537,18 +569,26 @@ function noSignal(id,label){
   $('status').textContent=VERSION+' · no signal · '+label;
 }
 
+/* Every pick (device, test pattern, file) gets a number. A device that answers after the user has picked
+   something else is closed and ignored, so a slow camera can't take the picture back. */
+let openSeq=0;
+const STALE={};
 async function useDevice(id){
   stopStream();
+  const my=++openSeq;
   const label=$('src').selectedOptions[0]?.textContent||'';
-  source='connecting'; placeholder('CONNECTING…'); clearScopes();
+  source='connecting'; showFileUI(null); placeholder('spinner'); clearScopes();
   const [w,h]=wantedRes.split('x').map(Number);
   const log=[];
   const note=(what,e)=>log.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
   async function open(v,what){
-    try{ return await navigator.mediaDevices.getUserMedia({audio:false,video:v}); }
     // Only a refusal ends the attempt. A read error can come from one format the device dislikes,
-    // so the looser requests below still get their turn.
-    catch(e){ note(what,e); if(e.name==='NotAllowedError'||e.name==='SecurityError') throw e; return null; }
+    // so the looser requests below still get their turn. A newer pick ends it too (STALE).
+    let s=null;
+    try{ s=await navigator.mediaDevices.getUserMedia({audio:false,video:v}); }
+    catch(e){ if(my!==openSeq) throw STALE; note(what,e); if(e.name==='NotAllowedError'||e.name==='SecurityError') throw e; return null; }
+    if(my!==openSeq){ s.getTracks().forEach(t=>t.stop()); throw STALE; }
+    return s;
   }
   // Capture cards are picky: try progressively looser requests until one is accepted.
   async function tryId(devId){
@@ -581,7 +621,8 @@ async function useDevice(id){
         else { any.getTracks().forEach(t=>t.stop()); stream=await open({deviceId:d.deviceId},'by name'); }
       }
     }
-  }catch(e){ /* permission or busy: reported below */ }
+  }catch(e){ if(e===STALE){ stopStream(); return; } /* permission or busy: reported below */ }
+  if(my!==openSeq){ stopStream(); return; }
   if(!stream){
     const unreadable=log.some(l=>l.includes('NotReadableError'));
     const refused=log.some(l=>/NotAllowedError|SecurityError/.test(l));
@@ -597,14 +638,87 @@ async function useDevice(id){
   const track=stream.getVideoTracks()[0];
   if(track) track.onended=()=>{ if(stream?.getVideoTracks()[0]===track){ errLog.push(new Date().toISOString().slice(11,19)+'  "'+label+'" stopped sending video'); noSignal(id,label); } };
   vid.srcObject=stream; vid.removeAttribute('src');
-  await vid.play().catch(()=>{});
-  source='device'; msg(''); placeholder(null);
+  source='device'; msg('');
   layout.lastDevice=label; layout.lastId=id; saveLayout();
+  await vid.play().catch(()=>{});
+  if(my!==openSeq) return;
+  // Opened, but frames may not come (an NDI Webcam with no source picked, for example): keep the
+  // spinner until the first frame, and say NO SIGNAL if none has come after a few seconds.
+  if(vid.readyState>=2) placeholder(null);
+  else setTimeout(()=>{ if(my===openSeq && source==='device' && vid.readyState<2){ placeholder('NO SIGNAL',true); clearScopes(); } },4000);
 }
-function useTest(){ stopStream(); vid.pause(); vid.srcObject=null; source='test'; placeholder(null); showAllRes(); $('src').value='test'; setStageAspect(16,9); fitStage(); }
+/* ---------- video file: title above the picture, transport under it ---------- */
+let loopOn=true, fileFps=0;                 // fileFps is measured from the frames as they play (0 = not known yet)
+function showFileUI(name){
+  const on=!!name;
+  $('vTitle').textContent=name||''; $('vTitle').hidden=!on; $('vTitle').title=name||'';
+  $('transport').hidden=!on;
+  fitStage();
+}
+const FPS_GUESS=()=>fileFps||30;
+const pad2=n=>String(n).padStart(2,'0');
+function timecode(sec){
+  sec=Math.max(0,sec||0); const f=Math.round(FPS_GUESS());
+  const whole=Math.floor(sec+1e-6), fr=Math.min(f-1,Math.floor((sec-whole)*f+1e-6));
+  return pad2(Math.floor(whole/3600))+':'+pad2(Math.floor(whole/60)%60)+':'+pad2(whole%60)+':'+pad2(fr);
+}
+let scrubbing=false;
+function updateTransport(){
+  const d=vid.duration, c=vid.currentTime;
+  $('tcNow').textContent=timecode(c);
+  $('tcLeft').textContent='-'+timecode(isFinite(d)?d-c:0);
+  if(!scrubbing && isFinite(d) && d>0){ const s=$('tScrub'); s.value=Math.round(c/d*1000); fillSlider(s); }
+}
+function syncPlayIcon(){
+  const playing=!vid.paused;
+  $('tPlayIcon').setAttribute('d',playing?'M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z':'M4 2.5v11L13 8z');
+  $('tPlay').setAttribute('aria-label',playing?'Pause':'Play');
+}
+['play','pause','ended'].forEach(ev=>vid.addEventListener(ev,syncPlayIcon));
+function togglePlay(){ if(source!=='file') return; if(vid.paused) vid.play().catch(()=>{}); else vid.pause(); }
+function stepFrame(dir){
+  if(source!=='file'||!isFinite(vid.duration)) return;
+  vid.pause();
+  vid.currentTime=Math.min(vid.duration,Math.max(0,vid.currentTime+dir/FPS_GUESS()));
+}
+$('tPlay').onclick=togglePlay;
+$('tPrev').onclick=()=>stepFrame(-1);
+$('tNext').onclick=()=>stepFrame(1);
+$('tLoop').onclick=()=>{ loopOn=!loopOn; vid.loop=loopOn; toggle($('tLoop'),loopOn); };
+$('tScrub').addEventListener('input',e=>{ scrubbing=true; if(isFinite(vid.duration)) vid.currentTime=e.target.value/1000*vid.duration; });
+$('tScrub').addEventListener('change',()=>{ scrubbing=false; });
+// Measure the file's frame rate from the frames actually shown, for frame stepping and the timecode's frames
+if('requestVideoFrameCallback' in HTMLVideoElement.prototype){
+  let prev=null;
+  const onFrame=(now,m)=>{
+    if(source==='file' && prev && m.mediaTime>prev.mediaTime && m.presentedFrames>prev.presentedFrames && !vid.paused){
+      const est=(m.presentedFrames-prev.presentedFrames)/(m.mediaTime-prev.mediaTime);
+      if(est>5 && est<241) fileFps=fileFps?fileFps*0.9+est*0.1:est;
+    }
+    prev={mediaTime:m.mediaTime,presentedFrames:m.presentedFrames};
+    vid.requestVideoFrameCallback(onFrame);
+  };
+  vid.requestVideoFrameCallback(onFrame);
+}
+// Space plays / pauses a file; ← → step a frame (not while typing in a list or moving a splitter)
+document.addEventListener('keydown',e=>{
+  if(source!=='file' || e.ctrlKey||e.metaKey||e.altKey) return;
+  const a=document.activeElement;
+  if(/^(INPUT|SELECT|TEXTAREA)$/.test(a?.tagName) || a?.classList?.contains('split') || a?.classList?.contains('vsplit')) return;
+  if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); stepFrame(-1); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); stepFrame(1); }
+});
+
+// The first frame (or frames coming back) clears the spinner / NO SIGNAL
+['loadeddata','playing'].forEach(ev=>vid.addEventListener(ev,()=>{ if(source==='device' && vid.readyState>=2) placeholder(null); }));
+function useTest(){ openSeq++; stopStream(); showFileUI(null); vid.pause(); vid.removeAttribute('src'); vid.srcObject=null; source='test'; placeholder(null); showAllRes(); $('src').value='test'; setStageAspect(16,9); fitStage(); }
+let lastFile=null, fileURL=null;
 function useFile(f){
-  stopStream(); placeholder(null); showAllRes(); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=true;
-  vid.play().catch(()=>{}); source='file';
+  openSeq++; stopStream(); placeholder(null); showAllRes(); vid.srcObject=null;
+  if(f!==lastFile){ if(fileURL) URL.revokeObjectURL(fileURL); fileURL=URL.createObjectURL(f); lastFile=f; fileFps=0; }
+  vid.src=fileURL; vid.loop=loopOn;
+  vid.play().catch(()=>{}); source='file'; showFileUI(f.name);
   const sel=$('src'); if(![...sel.options].some(o=>o.value==='file')){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
   sel.value='file'; msg('');
 }
@@ -617,7 +731,7 @@ $('scan').onclick=async()=>{
 };
 ['copyErr','copyDiag'].forEach(id=>{ const b=$(id); b.dataset.label=b.textContent; b.onclick=()=>copyDiagnostics(b); });
 $('hideMsg').onclick=()=>{ msgEl.hidden=true; };
-$('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file') vid.play(); else useDevice(v); };
+$('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file'){ if(lastFile) useFile(lastFile); } else useDevice(v); };
 $('res').onchange=()=>{ wantedRes=$('res').value; layout.res=wantedRes; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
 $('fps').onchange=()=>{ wantedFps=$('fps').value; layout.fps=wantedFps; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
 $('openfile').onclick=()=>$('file').click();
@@ -958,7 +1072,15 @@ function renderView(el,w,h,t){
 
 /* ---------- loop ---------- */
 let frames=0, last=performance.now(), fps=0, scopeTick=0, scopeEvery=1, scopeFrames=0;
+// The drawing loop must never stop: a frame that fails is logged once (COPY DIAGNOSTICS shows it) and the next frame runs anyway.
+let tickFailed='';
 function tick(t){
+  requestAnimationFrame(tick);
+  try{ frame(t); }
+  catch(e){ const m=(e&&e.message)||String(e); if(m!==tickFailed){ tickFailed=m; errLog.push(new Date().toISOString().slice(11,19)+'  drawing failed: '+m); console.error(e); } }
+}
+function frame(t){
+  if(source==='file') updateTransport();
   let el=null, w=0, h=0;
   if(source==='test'){ drawPattern(t); el=pat; w=960; h=540; }
   else if((source==='device'||source==='file') && vid.readyState>=2){ el=vid; w=vid.videoWidth; h=vid.videoHeight; }
@@ -980,9 +1102,9 @@ function tick(t){
       $("status").textContent=`${VERSION} · ${w}×${h}${s?.frameRate?' @ '+s.frameRate.toFixed(2)+' fps in':''} · picture ${fps.toFixed(0)} fps · scopes ${sfps.toFixed(0)} fps · ${source==='test'?'test pattern':source==='file'?'file':'live'}`;
     }
   }
-  requestAnimationFrame(tick);
 }
 fitStage(); requestAnimationFrame(tick);
+
 (async function startup(){
   if(!navigator.mediaDevices?.getUserMedia) return;
   await scan();

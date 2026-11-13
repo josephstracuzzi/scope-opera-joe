@@ -36,7 +36,7 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 - Once a device is open, the resolution and frame-rate menus show what it is **actually sending** and list only what it can do. Your own choice is remembered for the next device and the next launch.
 - Devices that only send **YV12** (vMix lists one for each output) are greyed out: the app can't read that format. Use the same output without "YV12".
 - A built-in **test pattern**: 75% colour bars, a greyscale ramp, skin-tone patches, sharp and soft lines for peaking, and a rotating hue wheel.
-- **OPEN FILE…** to check a video file instead.
+- **OPEN FILE…** to check a video file instead. Its name shows above the picture, with transport controls under it: frame back, play / pause, frame forward, elapsed and remaining timecode, a scrub bar and **LOOP**. **Space** plays and pauses, **← / →** step a frame.
 
 ### Scopes
 - **Vectorscope** (BT.709) with 75% targets for R, Mg, B, Cy, G and Yl, and a skin-tone line.
@@ -61,6 +61,8 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 | Key | Action |
 |---|---|
 | **G** | Guides on / off |
+| **Space** | Play / pause a video file |
+| **← / →** | Previous / next frame of a video file |
 | **← / →** on the side bar, **↑ / ↓** on the scope bar | Resize |
 | **Home** on a bar | Reset its size |
 

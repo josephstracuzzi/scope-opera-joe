@@ -7,6 +7,12 @@ const { app, BrowserWindow, ipcMain, protocol, net, screen, session, shell } = r
 const path = require('path');
 const { pathToFileURL } = require('url');
 
+// One settings folder for every way of starting the app (the portable .exe would otherwise use
+// "Scope Opera Joe" and `npm start` "scope-opera-joe"). The single-instance lock below belongs to this
+// folder, so sharing it is also what stops an .exe and a dev copy running side by side.
+// Test tools pass their own throwaway folder in SOJ_USER_DATA.
+app.setPath('userData', process.env.SOJ_USER_DATA || path.join(app.getPath('appData'), 'scope-opera-joe'));
+
 // Single instance: a second launch exits immediately and focuses the running window,
 // so two copies can't fight over the capture card (only one app can open it at a time).
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
