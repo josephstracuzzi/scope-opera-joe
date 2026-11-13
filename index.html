@@ -579,21 +579,29 @@ function noSignal(id,label){
 /* Every pick (device, test pattern, file) gets a number. A device that answers after the user has picked
    something else is closed and ignored, so a slow camera can't take the picture back. */
 let openSeq=0;
-const STALE={};
+const STALE={}, SILENT={};
 async function useDevice(id){
   stopStream();
   const my=++openSeq;
   const label=$('src').selectedOptions[0]?.textContent||'';
   source='connecting'; showFileUI(null); placeholder('spinner'); clearScopes();
+  $('status').textContent=VERSION+' · connecting · '+label;
+  // Some devices take a long time to answer (NDI Webcam with no source picked waits 10 s before failing).
+  // After 4 s say NO SIGNAL, but keep trying behind it: if the device starts sending, the picture appears.
+  setTimeout(()=>{ if(my===openSeq && source==='connecting'){ placeholder('NO SIGNAL',true); clearScopes(); } },4000);
   const [w,h]=wantedRes.split('x').map(Number);
   const log=[];
   const note=(what,e)=>log.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
   async function open(v,what){
     // Only a refusal ends the attempt. A read error can come from one format the device dislikes,
     // so the looser requests below still get their turn. A newer pick ends it too (STALE).
-    let s=null;
+    // A device that only fails after a long wait has no signal at all (a format it dislikes is refused at
+    // once), so looser requests would just wait again: stop trying (SILENT).
+    let s=null; const t0=performance.now();
     try{ s=await navigator.mediaDevices.getUserMedia({audio:false,video:v}); }
-    catch(e){ if(my!==openSeq) throw STALE; note(what,e); if(e.name==='NotAllowedError'||e.name==='SecurityError') throw e; return null; }
+    catch(e){ if(my!==openSeq) throw STALE; note(what,e); if(e.name==='NotAllowedError'||e.name==='SecurityError') throw e;
+      if(e.name==='NotReadableError' && performance.now()-t0>3000){ log.push('no answer for '+Math.round((performance.now()-t0)/1000)+' s'); throw SILENT; }
+      return null; }
     if(my!==openSeq){ s.getTracks().forEach(t=>t.stop()); throw STALE; }
     return s;
   }
@@ -628,7 +636,7 @@ async function useDevice(id){
         else { any.getTracks().forEach(t=>t.stop()); stream=await open({deviceId:d.deviceId},'by name'); }
       }
     }
-  }catch(e){ if(e===STALE){ stopStream(); return; } /* permission or busy: reported below */ }
+  }catch(e){ if(e===STALE){ stopStream(); return; } /* SILENT, permission or busy: reported below */ }
   if(my!==openSeq){ stopStream(); return; }
   if(!stream){
     const unreadable=log.some(l=>l.includes('NotReadableError'));
