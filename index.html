@@ -45,6 +45,9 @@ header{display:flex;flex-direction:column;gap:6px;padding:10px 16px;border-botto
 /* A label drawn like a button (GAIN sits next to ZEBRAS and PEAKING), but it isn't one */
 .chip{background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:6px 10px;font-family:var(--font-ui);font-size:10px;font-weight:bold;letter-spacing:.5px;line-height:13px;white-space:nowrap;cursor:default}
 .ctl .end{margin-left:auto;margin-right:0}
+/* Guides in PLAYBACK JOE's green (its OUTPUT-on colours) instead of the brand blue */
+[aria-label="Guides"] button.on,[aria-label="Guides"] select.set{background:#16a34a;color:#fff;border-color:#22c55e}
+[aria-label="Guides"] button.on:hover,[aria-label="Guides"] select.set:hover{background:#15803d;border-color:#22c55e}
 .ctl .fs{margin-left:10px}   /* a little apart from the SHOW buttons */
 /* The source list gives up room first: long device names are cut with "…" (full name when it's open) */
 #src{flex:0 1 260px;min-width:140px;max-width:300px}
@@ -226,7 +229,7 @@ footer button{padding:4px 10px}
   </div>
   <div class="ctl one-row" role="group" aria-label="Guides and picture">
       <span class="grp" role="group" aria-label="Guides">
-        <button id="gOn" class="on" aria-pressed="true" title="Show or hide all guides (G)">Guides</button>
+        <button id="gOn" aria-pressed="false" title="Show or hide all guides (G)">Guides</button>
         <select id="gFrame" aria-label="Frame guide" title="Frame guide for another delivery shape">
           <option value="0">No frame</option>
           <option value="0.5625">9:16 portrait</option>
@@ -248,7 +251,7 @@ footer button{padding:4px 10px}
       </span>
       <span class="grp pic" role="group" aria-label="Picture tools">
       <span>
-        <button id="zeb" class="on" aria-pressed="true">Zebras</button>
+        <button id="zeb" aria-pressed="false">Zebras</button>
         <input type="range" id="zebT" min="50" max="109" value="95" aria-label="Zebra threshold">
         <span class="val" id="zebV">95%</span>
       </span>
@@ -360,7 +363,7 @@ document.querySelectorAll('input[type=range]').forEach(r=>{
   r.title=(r.title?r.title+' · ':'')+'Double-click: reset to '+r.defaultValue+(r.id==='gain'?'':'%');
   r.addEventListener('dblclick',()=>{ r.value=r.defaultValue; r.dispatchEvent(new Event('input',{bubbles:true})); });
 });
-let stream=null, source='test', zebOn=true, peakOn=false;
+let stream=null, source='test';
 
 /* ---------- helpers ---------- */
 /* ---------- CONSOLE: everything that happened, errors in red, events in blue ---------- */
@@ -811,8 +814,11 @@ function syncStack(){ toggle($('parStack'),stacked); $('parTitle').textContent=s
 $('parStack').onclick=()=>{ stacked=!stacked; syncStack(); };
 syncStack();
 applyViews();
-$('zeb').onclick=()=>{ zebOn=!zebOn; toggle($('zeb'),zebOn); };
-$('peak').onclick=()=>{ peakOn=!peakOn; toggle($('peak'),peakOn); };
+// Zebras and peaking start off on a first launch, then come back the way they were left
+let zebOn=!!layout.zebras, peakOn=!!layout.peaking;
+toggle($('zeb'),zebOn); toggle($('peak'),peakOn);
+$('zeb').onclick=()=>{ zebOn=!zebOn; toggle($('zeb'),zebOn); layout.zebras=zebOn; saveLayout(); };
+$('peak').onclick=()=>{ peakOn=!peakOn; toggle($('peak'),peakOn); layout.peaking=peakOn; saveLayout(); };
 $('zebT').oninput=e=>$('zebV').textContent=e.target.value+'%';
 $('peakS').oninput=e=>$('peakV').textContent=e.target.value+'%';
 $('fs').onclick=()=>{ const m=$('monitor'); (document.fullscreenElement?document.exitFullscreen():m.requestFullscreen?.())?.catch?.(()=>{}); };
@@ -1008,7 +1014,8 @@ function drawWaveform(d){
 
 /* ---------- guides: frame shapes, centre, thirds, grid, safe areas ---------- */
 const gc=$('guides').getContext('2d');
-const guides={on:true,frame:'0',mask:'0.8',centre:false,thirds:false,grid:false,safe:false, ...(layout.guides||{})};
+const guides={on:false,frame:'0',   // all off on a first launch; saved after that
+  mask:'0.8',centre:false,thirds:false,grid:false,safe:false, ...(layout.guides||{})};
 function drawGuides(){
   const cv=$('guides'), dpr=window.devicePixelRatio||1;
   const W=Math.round(stage.clientWidth*dpr), H=Math.round(stage.clientHeight*dpr);
@@ -1060,6 +1067,7 @@ function drawGuides(){
 function syncGuideUI(){
   $('gFrame').value=guides.frame; $('gMask').value=guides.mask;
   $('gMask').disabled=+guides.frame===0;
+  $('gFrame').classList.toggle('set',+guides.frame>0);   // green like the guide buttons when a frame is chosen
   [['gCentre','centre'],['gThirds','thirds'],['gGrid','grid'],['gSafe','safe']].forEach(([b,k])=>toggle($(b),guides[k]));
   toggle($('gOn'),guides.on);
   // Dim the individual controls while guides are off, but leave them usable.
