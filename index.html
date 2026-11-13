@@ -128,11 +128,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
     <label for="src">Input</label>
     <select id="src"><option value="test">Test pattern (75% bars)</option></select>
     <button id="scan" title="Find devices again and reopen the selected one">Reload</button>
-    <select id="res" title="Requested capture resolution">
-      <option value="1920x1080">1080p</option>
-      <option value="3840x2160">2160p</option>
-      <option value="1280x720">720p</option>
-    </select>
+    <select id="res" title="Capture resolution. With a device open it shows the size the device is actually sending."></select>
     <select id="fps" title="Requested frame rate. Higher rates often make the card switch to MJPEG; lower rates often give uncompressed YUV.">
       <option value="auto">Auto fps</option><option value="60">60</option><option value="59.94">59.94</option><option value="50">50</option>
       <option value="30">30</option><option value="29.97">29.97</option><option value="25">25</option><option value="24">24</option>
@@ -269,7 +265,7 @@ async function diagnostics(){
   try{ const rt=await api?.getRuntimeInfo?.(); if(rt) L.push('App: Electron '+rt.electron+'  Chromium '+rt.chrome+'  '+rt.platform); }catch(e){}
   L.push('Browser: '+navigator.userAgent);
   L.push('Page: '+location.protocol+'//'+(location.host||'(local file)')+'  secureContext='+window.isSecureContext);
-  L.push('Selected input: '+($('src').selectedOptions[0]?.textContent||'?')+'  requested '+$('res').value);
+  L.push('Selected input: '+($('src').selectedOptions[0]?.textContent||'?')+'  requested '+wantedRes+'  showing '+$('res').value);
   try{
     const st=await navigator.permissions?.query({name:'camera'}); if(st) L.push('Camera permission: '+st.state);
   }catch(e){}
@@ -421,11 +417,37 @@ async function scan(){
   }
   const sel=$('src'), keep=sel.value;
   sel.innerHTML='<option value="test">Test pattern (75% bars)</option>';
-  devs.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId||('idx:'+i); o.textContent=d.label||('Video device '+(i+1)); sel.appendChild(o); });
+  devs.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId||('idx:'+i); o.textContent=d.label||('Video device '+(i+1));
+    // YV12-only outputs (vMix offers one per output) can't be opened: Chromium's capture has no YV12 support
+    if(/\bYV12\b/i.test(d.label)){ o.disabled=true; o.textContent+=' (YV12 not supported)'; }
+    sel.appendChild(o); });
   if(source==='file'){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
   if([...sel.options].some(o=>o.value===keep)) sel.value=keep;
   msg(devs.length? '' : 'No video devices found. Check the capture card is plugged in and not open in another app (OBS etc.).');
 }
+/* ---------- resolution menu ----------
+   wantedRes is what the user picked (asked for when a device opens, remembered between launches).
+   With a device open, the menu lists only the sizes it can do and shows the size it is actually sending,
+   which may differ from what was asked for (OBS sends whatever its output is set to, for example). */
+const RES_PRESETS=[[3840,2160,'2160p'],[1920,1080,'1080p'],[1280,720,'720p']];
+let wantedRes=layout.res||'1920x1080';
+function fillRes(list,selected){
+  const sel=$('res'); sel.innerHTML='';
+  list.forEach(([w,h,name])=>{ const o=document.createElement('option'); o.value=w+'x'+h; o.textContent=name||(w+'×'+h); sel.appendChild(o); });
+  sel.value=selected;
+}
+function showAllRes(){ fillRes(RES_PRESETS,wantedRes); }
+function showActualRes(){
+  const w=vid.videoWidth, h=vid.videoHeight; if(!w||!h) return;
+  let caps={}; try{ caps=stream?.getVideoTracks()[0]?.getCapabilities?.()||{}; }catch(e){}
+  const maxW=caps.width?.max||Infinity, maxH=caps.height?.max||Infinity;
+  const list=RES_PRESETS.filter(([pw,ph])=>pw<=maxW&&ph<=maxH);
+  if(!list.some(([pw,ph])=>pw===w&&ph===h)) list.push([w,h]);
+  list.sort((a,b)=>b[0]*b[1]-a[0]*a[1]);
+  fillRes(list,w+'x'+h);
+}
+showAllRes();
+
 function stopStream(){ if(stream){ stream.getTracks().forEach(t=>{ t.onended=null; t.stop(); }); stream=null; } }
 
 /* ---------- NO SIGNAL / CONNECTING in the picture area ---------- */
@@ -439,7 +461,7 @@ function clearScopes(){ drawVectorscope(EMPTY); drawWaveform(EMPTY); drawParade(
 // The device is still selected, but nothing comes from it: blank picture and scopes, say so.
 function noSignal(id,label){
   stopStream(); vid.pause(); vid.srcObject=null; source='none';
-  placeholder('NO SIGNAL',true);
+  placeholder('NO SIGNAL',true); showAllRes();
   clearScopes();
   $('status').textContent=VERSION+' · no signal · '+label;
 }
@@ -448,7 +470,7 @@ async function useDevice(id){
   stopStream();
   const label=$('src').selectedOptions[0]?.textContent||'';
   source='connecting'; placeholder('CONNECTING…'); clearScopes();
-  const [w,h]=$('res').value.split('x').map(Number);
+  const [w,h]=wantedRes.split('x').map(Number);
   const log=[];
   const note=(what,e)=>log.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
   async function open(v,what){
@@ -508,14 +530,14 @@ async function useDevice(id){
   source='device'; msg(''); placeholder(null);
   layout.lastDevice=label; layout.lastId=id; saveLayout();
 }
-function useTest(){ stopStream(); vid.pause(); vid.srcObject=null; source='test'; placeholder(null); $('src').value='test'; setStageAspect(16,9); fitStage(); }
+function useTest(){ stopStream(); vid.pause(); vid.srcObject=null; source='test'; placeholder(null); showAllRes(); $('src').value='test'; setStageAspect(16,9); fitStage(); }
 function useFile(f){
-  stopStream(); placeholder(null); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=true;
+  stopStream(); placeholder(null); showAllRes(); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=true;
   vid.play().catch(()=>{}); source='file';
   const sel=$('src'); if(![...sel.options].some(o=>o.value==='file')){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
   sel.value='file'; msg('');
 }
-['loadedmetadata','resize'].forEach(ev=>vid.addEventListener(ev,()=>{ setStageAspect(vid.videoWidth,vid.videoHeight); fitStage(); }));
+['loadedmetadata','resize'].forEach(ev=>vid.addEventListener(ev,()=>{ setStageAspect(vid.videoWidth,vid.videoHeight); fitStage(); if(source==='device') showActualRes(); }));
 // RELOAD: list the devices again, then reopen the selected one (also the way to retry after NO SIGNAL)
 $('scan').onclick=async()=>{
   await scan();
@@ -525,7 +547,8 @@ $('scan').onclick=async()=>{
 ['copyErr','copyDiag'].forEach(id=>{ const b=$(id); b.dataset.label=b.textContent; b.onclick=()=>copyDiagnostics(b); });
 $('hideMsg').onclick=()=>{ msgEl.hidden=true; };
 $('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file') vid.play(); else useDevice(v); };
-$('res').onchange=$('fps').onchange=()=>{ if(source==='device'||source==='none') useDevice($('src').value); };
+$('res').onchange=()=>{ wantedRes=$('res').value; layout.res=wantedRes; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
+$('fps').onchange=()=>{ if(source==='device'||source==='none') useDevice($('src').value); };
 $('openfile').onclick=()=>$('file').click();
 $('file').onchange=e=>{ if(e.target.files[0]) useFile(e.target.files[0]); };
 if(navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange',()=>{ if($('src').options.length>1) scan(); });
@@ -880,7 +903,8 @@ fitStage(); requestAnimationFrame(tick);
   if(!navigator.mediaDevices?.getUserMedia) return;
   await scan();
   const sel=$('src');
-  const opt=[...sel.options].find(o=>o.value===layout.lastId) || [...sel.options].find(o=>layout.lastDevice && o.textContent===layout.lastDevice && !o.textContent.startsWith('Video device '));
+  const usable=[...sel.options].filter(o=>!o.disabled);
+  const opt=usable.find(o=>o.value===layout.lastId) || usable.find(o=>layout.lastDevice && o.textContent===layout.lastDevice && !o.textContent.startsWith('Video device '));
   if(opt && opt.value!=='test'){ sel.value=opt.value; useDevice(opt.value); }
 })();
 if(!navigator.mediaDevices?.getUserMedia) msg('This browser can\'t access video devices from this page. Open it in Chrome or Edge, or serve it from localhost.');
