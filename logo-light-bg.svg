@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 606 120" width="606" height="120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 623 120" width="623" height="120">
   <title>SCOPE OPERA JOE</title>
   <style>@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;display=swap');
     .t{font-family:'Bebas Neue','BebasNeue','Bebas Neue Regular',Impact,'Arial Narrow',sans-serif;font-size:107px}</style>
   <text class="t" x="450" y="98" text-anchor="end" fill="#7e7e7e">SCOPE OPERA</text>
-  <text class="t" x="452" y="98" fill="#1c1c1c">J</text>
-  <circle cx="521.5" cy="60" r="42" fill="#1c1c1c"/>
-  <g transform="translate(520 59)">
+  <text class="t" x="469" y="98" fill="#1c1c1c">J</text>
+  <circle cx="538.5" cy="60" r="42" fill="#1c1c1c"/>
+  <g transform="translate(537 59)">
   <defs>
     <radialGradient id="bcrema" cx="0" cy="0" r="20.50" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#8f5422"/><stop offset=".7" stop-color="#a8682e"/><stop offset="1" stop-color="#c58a4c"/>
@@ -23,5 +23,5 @@
   <circle cx="-9.00" cy="9.00" r="2.20" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="-4.00" cy="11.50" r="1.60" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="1.00" cy="9.50" r="2.60" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="6.00" cy="12.00" r="1.80" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="10.00" cy="8.50" r="1.50" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="-12.00" cy="5.00" r="1.30" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="3.00" cy="14.50" r="1.20" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="-7.00" cy="14.00" r="1.10" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="13.00" cy="4.00" r="1.10" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/><circle cx="-1.00" cy="13.30" r="0.90" fill="#5a2f0c" stroke="#3a1c05" stroke-width="0.50"/>
   <path d="M 5.50 -16.50 A 14.00 14.00 0 0 1 13.40 -4.50" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.10" stroke-linecap="round"/>
 </g>
-  <text class="t" x="564" y="98" fill="#1c1c1c">E</text>
+  <text class="t" x="581" y="98" fill="#1c1c1c">E</text>
 </svg>

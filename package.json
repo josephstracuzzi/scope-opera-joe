@@ -1,0 +1,73 @@
+{
+  "name": "scope-opera-joe",
+  "version": "1.16.0",
+  "description": "Live video scopes for a capture card or camera: vectorscope, RGB parade, luma waveform, zebras, focus peaking and frame guides",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux --x64",
+    "logos": "electron tools/render-logos.js",
+    "screenshot": "electron tools/screenshot.js"
+  },
+  "author": "Joseph Stracuzzi",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.scopeoperajoe.app",
+    "productName": "Scope Opera Joe",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "logo.ico"
+    },
+    "portable": {
+      "artifactName": "${productName} ${version} Portable.exe"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "icon.png",
+      "category": "public.app-category.video",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Scope Opera Joe reads your capture card or camera to draw its video scopes."
+      }
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "icon": "icon.png",
+      "category": "AudioVideo"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "logo.png",
+      "logo.ico",
+      "icon.png"
+    ]
+  },
+  "allowScripts": {
+    "electron@28.3.3": true
+  }
+}
