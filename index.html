@@ -129,10 +129,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
     <select id="src"><option value="test">Test pattern (75% bars)</option></select>
     <button id="scan" title="Find devices again and reopen the selected one">Reload</button>
     <select id="res" title="Capture resolution. With a device open it shows the size the device is actually sending."></select>
-    <select id="fps" title="Requested frame rate. Higher rates often make the card switch to MJPEG; lower rates often give uncompressed YUV.">
-      <option value="auto">Auto fps</option><option value="60">60</option><option value="59.94">59.94</option><option value="50">50</option>
-      <option value="30">30</option><option value="29.97">29.97</option><option value="25">25</option><option value="24">24</option>
-    </select>
+    <select id="fps" title="Frame rate. With a device open it shows the rate the device is actually sending. Higher rates often make a card switch to MJPEG; lower rates often give uncompressed YUV."></select>
     <input type="file" id="file" accept="video/*" hidden>
     <button id="openfile" title="Analyse a video file instead">Open file…</button>
   </div>
@@ -265,7 +262,7 @@ async function diagnostics(){
   try{ const rt=await api?.getRuntimeInfo?.(); if(rt) L.push('App: Electron '+rt.electron+'  Chromium '+rt.chrome+'  '+rt.platform); }catch(e){}
   L.push('Browser: '+navigator.userAgent);
   L.push('Page: '+location.protocol+'//'+(location.host||'(local file)')+'  secureContext='+window.isSecureContext);
-  L.push('Selected input: '+($('src').selectedOptions[0]?.textContent||'?')+'  requested '+wantedRes+'  showing '+$('res').value);
+  L.push('Selected input: '+($('src').selectedOptions[0]?.textContent||'?')+'  requested '+wantedRes+' @ '+wantedFps+'  showing '+$('res').value+' @ '+$('fps').value);
   try{
     const st=await navigator.permissions?.query({name:'camera'}); if(st) L.push('Camera permission: '+st.state);
   }catch(e){}
@@ -436,7 +433,29 @@ function fillRes(list,selected){
   list.forEach(([w,h,name])=>{ const o=document.createElement('option'); o.value=w+'x'+h; o.textContent=name||(w+'×'+h); sel.appendChild(o); });
   sel.value=selected;
 }
-function showAllRes(){ fillRes(RES_PRESETS,wantedRes); }
+function showAllRes(){ fillRes(RES_PRESETS,wantedRes); showAllFps(); }
+
+/* Frame rate works the same way. AUTO stays at the top so the user can always go back to it. */
+const FPS_PRESETS=[60,59.94,50,30,29.97,25,24];
+let wantedFps=layout.fps||'auto';
+const fpsLabel=f=>String(+f.toFixed(2));
+function fillFps(list,selected){
+  const sel=$('fps'); sel.innerHTML='';
+  [['auto','Auto fps'],...list.map(f=>[fpsLabel(f),fpsLabel(f)])].forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
+  sel.value=selected;
+}
+function showAllFps(){ fillFps(FPS_PRESETS,wantedFps); }
+function showActualFps(){
+  let s={}, caps={};
+  try{ const t=stream?.getVideoTracks()[0]; s=t?.getSettings()||{}; caps=t?.getCapabilities?.()||{}; }catch(e){}
+  if(!s.frameRate) return;
+  const max=(caps.frameRate?.max||Infinity)+0.01, min=(caps.frameRate?.min||0)-0.01;
+  const list=FPS_PRESETS.filter(f=>f<=max&&f>=min);
+  // Devices report e.g. 60.00024 or 29.969999: match a preset when within 0.01, otherwise list the real rate
+  let actual=list.find(f=>Math.abs(f-s.frameRate)<0.01);
+  if(actual===undefined){ actual=s.frameRate; list.push(actual); list.sort((a,b)=>b-a); }
+  fillFps(list,fpsLabel(actual));
+}
 function showActualRes(){
   const w=vid.videoWidth, h=vid.videoHeight; if(!w||!h) return;
   let caps={}; try{ caps=stream?.getVideoTracks()[0]?.getCapabilities?.()||{}; }catch(e){}
@@ -445,6 +464,7 @@ function showActualRes(){
   if(!list.some(([pw,ph])=>pw===w&&ph===h)) list.push([w,h]);
   list.sort((a,b)=>b[0]*b[1]-a[0]*a[1]);
   fillRes(list,w+'x'+h);
+  showActualFps();
 }
 showAllRes();
 
@@ -483,7 +503,7 @@ async function useDevice(id){
   async function tryId(devId){
     // A blank or placeholder ID can't be matched; ask without a deviceId (picks the default / only device).
     const dev=(devId && !devId.startsWith('idx:'))?{deviceId:{exact:devId}}:{};
-    const f=$('fps').value;
+    const f=wantedFps;
     return (f!=='auto' && await open({...dev,width:{ideal:w},height:{ideal:h},frameRate:{exact:+f}},'res+'+f+'fps exact'))
         || await open({...dev,width:{ideal:w},height:{ideal:h},frameRate:{ideal:f==='auto'?60:+f}},'res+fps')
         || await open({...dev,width:{ideal:w},height:{ideal:h}},'res')
@@ -548,7 +568,7 @@ $('scan').onclick=async()=>{
 $('hideMsg').onclick=()=>{ msgEl.hidden=true; };
 $('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file') vid.play(); else useDevice(v); };
 $('res').onchange=()=>{ wantedRes=$('res').value; layout.res=wantedRes; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
-$('fps').onchange=()=>{ if(source==='device'||source==='none') useDevice($('src').value); };
+$('fps').onchange=()=>{ wantedFps=$('fps').value; layout.fps=wantedFps; saveLayout(); if(source==='device'||source==='none') useDevice($('src').value); };
 $('openfile').onclick=()=>$('file').click();
 $('file').onchange=e=>{ if(e.target.files[0]) useFile(e.target.files[0]); };
 if(navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange',()=>{ if($('src').options.length>1) scan(); });
