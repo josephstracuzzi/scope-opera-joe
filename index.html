@@ -494,11 +494,17 @@ async function scan(){
   }
   const sel=$('src'), keep=sel.value;
   sel.innerHTML='<option value="test">Test pattern (75% bars)</option>';
+  // Usable devices first, then (after a divider) the ones that can't be opened, greyed out.
+  // YV12-only outputs (vMix offers one per output) can't be opened: Chromium's capture has no YV12 support.
+  const unsupported=[];
   devs.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId||('idx:'+i); o.textContent=d.label||('Video device '+(i+1));
-    // YV12-only outputs (vMix offers one per output) can't be opened: Chromium's capture has no YV12 support
-    if(/\bYV12\b/i.test(d.label)){ o.disabled=true; o.textContent+=' (YV12 not supported)'; }
-    sel.appendChild(o); });
-  if(source==='file'){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
+    if(/\bYV12\b/i.test(d.label)){ o.disabled=true; o.title='YV12 is not supported'; unsupported.push(o); }
+    else sel.appendChild(o); });
+  if(lastFile||source==='file'){ const o=document.createElement('option'); o.value='file'; o.textContent='Video file'; sel.appendChild(o); }
+  if(unsupported.length){
+    const div=document.createElement('option'); div.disabled=true; div.textContent='── Not supported ──'; sel.appendChild(div);
+    unsupported.forEach(o=>sel.appendChild(o));
+  }
   if([...sel.options].some(o=>o.value===keep)) sel.value=keep;
   msg(devs.length? '' : 'No video devices found. Check the capture card is plugged in and not open in another app (OBS etc.).');
 }

@@ -34,7 +34,7 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 - If the selected device sends nothing, the picture says **NO SIGNAL**.
 - Ask for **2160p, 1080p or 720p** and a frame rate (**AUTO, 60, 59.94, 50, 30, 29.97, 25, 24**). Capture cards can be picky, so if the card refuses, Scope Opera Joe tries looser settings until it gets a picture.
 - Once a device is open, the resolution and frame-rate menus show what it is **actually sending** and list only what it can do. Your own choice is remembered for the next device and the next launch.
-- Devices that only send **YV12** (vMix lists one for each output) are greyed out: the app can't read that format. Use the same output without "YV12".
+- Devices that only send **YV12** (vMix lists one for each output) are greyed out at the bottom of the list, under **Not supported**: the app can't read that format. Use the same output without "YV12".
 - A built-in **test pattern**: 75% colour bars, a greyscale ramp, skin-tone patches, sharp and soft lines for peaking, and a rotating hue wheel.
 - **OPEN FILE…** to check a video file instead. Its name shows above the picture, with transport controls under it: frame back, play / pause, frame forward, elapsed and remaining timecode, a scrub bar and **LOOP**. **Space** plays and pauses, **← / →** step a frame.
 
