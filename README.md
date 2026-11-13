@@ -3,7 +3,7 @@ Designed by Joseph Stracuzzi
 
 **Live video scopes for your capture card or camera.** Plug in a capture card, pick it from the list, and watch your picture with a vectorscope, RGB parade and luma waveform beside it, plus zebras, focus peaking and frame guides right on the picture.
 
-![Scope Opera Joe: picture with the 75% test pattern (left), vectorscope, luma waveform and RGB parade (right)](docs/screenshot.png)
+![Scope Opera Joe: the 75% test pattern with thirds and centre guides (left), vectorscope, luma waveform and RGB parade (right)](docs/screenshot.png)
 
 ---
 
@@ -38,22 +38,27 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 - A built-in **test pattern**: 75% colour bars, a greyscale ramp, skin-tone patches, sharp and soft lines for peaking, and a rotating hue wheel.
 - **OPEN FILE…** to check a video file instead. Its name shows above the picture, with transport controls under it: frame back, play / pause, frame forward, elapsed and remaining timecode, a scrub bar and **LOOP**. **Space** plays and pauses, **← / →** step a frame.
 
+<img src="docs/feature-file.png" width="597" alt="A video file with its name above the picture, and the transport bar under it: frame back, play, frame forward, elapsed timecode, scrub bar, remaining timecode in red and LOOP">
+
 ### Scopes
 - **Vectorscope** (BT.709) with 75% targets for R, Mg, B, Cy, G and Yl, and a skin-tone line.
 - **Luma waveform** (BT.709 Y) with a 10% grid.
 - **RGB parade** with 0/25/50/75/100% lines. **STACK** overlays red, green and blue in one panel, so where all three match the trace reads white.
-- **SCOPE GAIN** makes faint traces brighter.
+- **GAIN** makes faint traces brighter. Double-click any slider to put it back to its default.
 
 ### On the picture
 - **ZEBRAS** stripe everything above a level you choose (50–109%).
 - **PEAKING** outlines sharp edges in red, green, blue, yellow or white, with a sensitivity slider.
 - **GUIDES**: frame shapes for other deliveries (9:16, 4:5, 1:1, 4:3, 16:9, 1.85, 2:1, 2.39) with the outside shaded, plus **CENTRE**, **THIRDS**, a 4×4 **GRID** and **SAFE** areas (93% action, 90% title). With a frame shape set, the other guides sit inside it.
 - Zebras and peaking are drawn on the graphics card in the same pass as the picture, so they never lag behind it.
+- Guides, zebras and peaking start off; after that they come back the way you left them.
+
+<img src="docs/feature-guides.png" width="597" alt="A 9:16 portrait frame guide with the outside shaded, thirds and a centre cross inside it, and the green guide buttons above">
 
 ### Layout
-- **SHOW** turns the preview and each scope on or off. Hidden windows stop working, which saves processing.
-- Drag the bars between the picture and the scopes to resize them. Double-click a bar to reset it.
-- **FULLSCREEN** fills the screen with the picture.
+- The **PREVIEW**, **VECTORSCOPE**, **WAVEFORM** and **PARADE** buttons turn each window on or off. Hidden windows stop working, which saves processing.
+- Drag the bars between the picture and the scopes, or between two scopes, to resize them. Double-click a bar to reset it.
+- The fullscreen button (top right) fills the screen with the picture.
 - Your layout and guide settings are remembered.
 - Only one copy of the app runs at a time, so a double-click can't open a second one fighting over the capture card.
 
@@ -70,6 +75,8 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 The footer along the bottom shows what the picture is: **LIVE** in green for a working device, **TEST PATTERN** or **FILE** in orange, **NO SIGNAL** in red. Next to it is a live readout of the size, frame rates and scope speed.
 
 **CONSOLE** at the right of the footer opens a log of what happened: events in blue, problems in red (for example, why a device wouldn't open). The button turns red when there's a problem you haven't looked at yet. **COPY LOGS** copies the log; **COPY DIAGNOSTICS** copies a full report with your devices, their settings and the log, ready to paste into a bug report.
+
+<img src="docs/feature-console.png" width="520" alt="The console window with events in blue and a device that could not be opened in red, and the CLEAR LOGS, COPY LOGS and COPY DIAGNOSTICS buttons">
 
 A web page or app can't choose the capture format (YUV or MJPEG); the camera system picks it. Resolution and frame rate are the only levers: high frame rates and 4K often make USB cards switch to MJPEG.
 
