@@ -27,15 +27,23 @@ body{background:var(--bg);color:var(--fg);font:12px/1.35 var(--font-ui);display:
 ::-webkit-scrollbar-thumb:hover{background:#555}
 
 /* Header: logo + version badge, then the control groups */
-/* Header: logo on the left, then one row per kind of control (INPUT, PICTURE, GUIDES, VIEW).
-   A row that runs out of room wraps inside itself, never into another row. */
-header{display:flex;align-items:flex-start;gap:20px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+/* Header: logo on the left, then two rows: input + show/fullscreen, and guides + zebras/peaking/gain.
+   A row that runs out of room wraps inside itself, never into the other row. */
+header{display:flex;flex-direction:column;gap:6px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.hrow{display:flex;align-items:flex-start;gap:20px}
+.hrow > .ctl{flex:1;min-width:0}
 .brand{display:flex;align-items:center;gap:8px;flex-shrink:0;height:27px}
-.rows{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.row{display:flex;align-items:flex-start;gap:10px}
-.row-label{flex:none;width:58px;line-height:27px;color:var(--dim);font-size:10px;font-weight:bold;letter-spacing:.5px;font-family:var(--font-mono)}
-.ctl{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.ctl .grp{margin-right:12px}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ctl .grp{margin-right:12px;flex-wrap:wrap}
+.ctl .grp:last-child{margin-right:0}
+/* Row 2: the guides, then the picture tools (zebras, peaking, gain), left-aligned. Each block stays in
+   one piece; when they don't both fit, the picture tools move down to a line of their own. */
+.ctl.one-row{row-gap:6px}
+.ctl.one-row > .grp{flex:none;flex-wrap:nowrap}
+.ctl.one-row .pic{gap:18px}
+.ctl.one-row .pic > span{display:flex;align-items:center;gap:6px}
+/* A label drawn like a button (GAIN sits next to ZEBRAS and PEAKING), but it isn't one */
+.chip{background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:6px 10px;font-family:var(--font-ui);font-size:10px;font-weight:bold;letter-spacing:.5px;line-height:13px;white-space:nowrap;cursor:default}
 .ctl .end{margin-left:auto;margin-right:0}
 .ctl .fs{margin-left:10px}   /* a little apart from the SHOW buttons */
 #src{flex:0 1 260px;min-width:140px;max-width:300px}
@@ -124,7 +132,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
 
 @media (max-width:900px){
   body{overflow:auto}
-  header{flex-direction:column;gap:8px}
+  .hrow{flex-direction:column;gap:8px}
   main,main.nopreview,main.noscopes{grid-template-columns:1fr;grid-auto-rows:auto}
   .split,.vsplit{display:none}
   .scope{flex:none;height:320px}
@@ -134,53 +142,27 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
 </head>
 <body>
 <header>
-  <div class="brand"><img src="logo.png" alt="Scope Opera Joe" class="header-logo" id="logo" title="Click for About / Credits"><span class="version-badge" data-app-version id="verBadge" title="Click for About / Credits"></span></div>
-  <div class="rows">
-    <div class="row" role="group" aria-label="Input">
-      <label class="row-label" for="src">Input</label>
-      <div class="ctl">
-        <select id="src"><option value="test">Test pattern (75% bars)</option></select>
-        <button id="scan" title="Find devices again and reopen the selected one">Reload</button>
-        <select id="res" title="Capture resolution. With a device open it shows the size the device is actually sending."></select>
-        <select id="fps" title="Frame rate. With a device open it shows the rate the device is actually sending. Higher rates often make a card switch to MJPEG; lower rates often give uncompressed YUV."></select>
-        <input type="file" id="file" accept="video/*" hidden>
-        <button id="openfile" title="Analyse a video file instead">Open file…</button>
-        <span class="grp end views" role="group" aria-label="Show windows">
-          <label>Show</label>
-          <button id="vPreview" class="on" aria-pressed="true">Preview</button>
-          <button id="vVs" class="on" aria-pressed="true">Vectorscope</button>
-          <button id="vWf" class="on" aria-pressed="true">Waveform</button>
-          <button id="vPar" class="on" aria-pressed="true">Parade</button>
-          <button id="fs" class="fs">Fullscreen</button>
-        </span>
-      </div>
+  <div class="hrow">
+    <div class="brand"><img src="logo.png" alt="Scope Opera Joe" class="header-logo" id="logo" title="Click for About / Credits"><span class="version-badge" data-app-version id="verBadge" title="Click for About / Credits"></span></div>
+    <div class="ctl" role="group" aria-label="Input">
+      <label for="src">Input</label>
+      <select id="src"><option value="test">Test pattern (75% bars)</option></select>
+      <button id="scan" title="Find devices again and reopen the selected one">Reload</button>
+      <select id="res" title="Capture resolution. With a device open it shows the size the device is actually sending."></select>
+      <select id="fps" title="Frame rate. With a device open it shows the rate the device is actually sending. Higher rates often make a card switch to MJPEG; lower rates often give uncompressed YUV."></select>
+      <input type="file" id="file" accept="video/*" hidden>
+      <button id="openfile" title="Analyse a video file instead">Open file…</button>
+      <span class="grp end views" role="group" aria-label="Show windows">
+        <button id="vPreview" class="on" aria-pressed="true">Preview</button>
+        <button id="vVs" class="on" aria-pressed="true">Vectorscope</button>
+        <button id="vWf" class="on" aria-pressed="true">Waveform</button>
+        <button id="vPar" class="on" aria-pressed="true">Parade</button>
+        <button id="fs" class="fs">Fullscreen</button>
+      </span>
     </div>
-    <div class="row" role="group" aria-label="Picture">
-      <span class="row-label">Picture</span>
-      <div class="ctl">
-        <span class="grp">
-          <button id="zeb" class="on" aria-pressed="true">Zebras</button>
-          <input type="range" id="zebT" min="50" max="109" value="95" aria-label="Zebra threshold">
-          <span class="val" id="zebV">95%</span>
-        </span>
-        <span class="grp">
-          <button id="peak" aria-pressed="false">Peaking</button>
-          <input type="range" id="peakS" min="1" max="100" value="35" aria-label="Peaking sensitivity">
-          <span class="val" id="peakV">35%</span>
-          <select id="peakC" aria-label="Peaking colour">
-            <option value="255,40,40">Red</option><option value="40,255,90">Green</option>
-            <option value="60,140,255">Blue</option><option value="255,230,0">Yellow</option><option value="255,255,255">White</option>
-          </select>
-        </span>
-        <span class="grp">
-          <label for="gain">Scope gain</label>
-          <input type="range" id="gain" min="1" max="100" value="40">
-        </span>
-      </div>
-    </div>
-    <div class="row" role="group" aria-label="Guides">
-      <span class="row-label">Guides</span>
-      <div class="ctl">
+  </div>
+  <div class="ctl one-row" role="group" aria-label="Guides and picture">
+      <span class="grp" role="group" aria-label="Guides">
         <button id="gOn" class="on" aria-pressed="true" title="Show or hide all guides (G)">Guides</button>
         <select id="gFrame" aria-label="Frame guide" title="Frame guide for another delivery shape">
           <option value="0">No frame</option>
@@ -200,9 +182,28 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
         <button id="gThirds" aria-pressed="false">Thirds</button>
         <button id="gGrid" aria-pressed="false" title="4×4 grid">Grid</button>
         <button id="gSafe" aria-pressed="false" title="Action safe 93% · title safe 90%">Safe</button>
-      </div>
+      </span>
+      <span class="grp pic" role="group" aria-label="Picture tools">
+      <span>
+        <button id="zeb" class="on" aria-pressed="true">Zebras</button>
+        <input type="range" id="zebT" min="50" max="109" value="95" aria-label="Zebra threshold">
+        <span class="val" id="zebV">95%</span>
+      </span>
+      <span>
+        <button id="peak" aria-pressed="false">Peaking</button>
+        <input type="range" id="peakS" min="1" max="100" value="35" aria-label="Peaking sensitivity">
+        <span class="val" id="peakV">35%</span>
+        <select id="peakC" aria-label="Peaking colour">
+          <option value="255,40,40">Red</option><option value="40,255,90">Green</option>
+          <option value="60,140,255">Blue</option><option value="255,230,0">Yellow</option><option value="255,255,255">White</option>
+        </select>
+      </span>
+      <span>
+        <label for="gain" class="chip" title="Scope gain: makes faint traces brighter">Gain</label>
+        <input type="range" id="gain" min="1" max="100" value="40">
+      </span>
+      </span>
     </div>
-  </div>
 </header>
 <main id="main">
   <section class="monitor" id="monitor">

@@ -74,8 +74,9 @@ function createWindow() {
         y: workArea.y,
         width: Math.min(1500, workArea.width),
         height: Math.min(950, workArea.height),
-        minWidth: 800,
-        minHeight: 500,
+        // Same minimum as PLAYBACK JOE (1100 x 900), or the whole screen if it is smaller
+        minWidth: Math.min(1100, workArea.width),
+        minHeight: Math.min(900, workArea.height),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
