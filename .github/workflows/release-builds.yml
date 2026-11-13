@@ -22,7 +22,8 @@ env:
 
 jobs:
   mac:
-    runs-on: macos-14
+    # macos-14 runners were retired (GitHub: "configuration 'macos-14-arm64-us-default' is not supported")
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
