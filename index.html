@@ -36,8 +36,8 @@ header{display:flex;align-items:flex-start;gap:20px;padding:10px 16px;border-bot
 .row-label{flex:none;width:58px;line-height:27px;color:var(--dim);font-size:10px;font-weight:bold;letter-spacing:.5px;font-family:var(--font-mono)}
 .ctl{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .ctl .grp{margin-right:12px}
-.ctl .end{margin-left:auto}
-.ctl .gap-left{margin-left:12px}
+.ctl .end{margin-left:auto;margin-right:0}
+.ctl .fs{margin-left:10px}   /* a little apart from the SHOW buttons */
 #src{flex:0 1 260px;min-width:140px;max-width:300px}
 .header-logo{height:30px;width:auto;display:block;cursor:pointer}
 .header-logo:hover{opacity:.85}
@@ -145,7 +145,14 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
         <select id="fps" title="Frame rate. With a device open it shows the rate the device is actually sending. Higher rates often make a card switch to MJPEG; lower rates often give uncompressed YUV."></select>
         <input type="file" id="file" accept="video/*" hidden>
         <button id="openfile" title="Analyse a video file instead">Open file…</button>
-        <button id="fs" class="end">Fullscreen</button>
+        <span class="grp end views" role="group" aria-label="Show windows">
+          <label>Show</label>
+          <button id="vPreview" class="on" aria-pressed="true">Preview</button>
+          <button id="vVs" class="on" aria-pressed="true">Vectorscope</button>
+          <button id="vWf" class="on" aria-pressed="true">Waveform</button>
+          <button id="vPar" class="on" aria-pressed="true">Parade</button>
+          <button id="fs" class="fs">Fullscreen</button>
+        </span>
       </div>
     </div>
     <div class="row" role="group" aria-label="Picture">
@@ -164,6 +171,10 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
             <option value="255,40,40">Red</option><option value="40,255,90">Green</option>
             <option value="60,140,255">Blue</option><option value="255,230,0">Yellow</option><option value="255,255,255">White</option>
           </select>
+        </span>
+        <span class="grp">
+          <label for="gain">Scope gain</label>
+          <input type="range" id="gain" min="1" max="100" value="40">
         </span>
       </div>
     </div>
@@ -189,19 +200,6 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
         <button id="gThirds" aria-pressed="false">Thirds</button>
         <button id="gGrid" aria-pressed="false" title="4×4 grid">Grid</button>
         <button id="gSafe" aria-pressed="false" title="Action safe 93% · title safe 90%">Safe</button>
-      </div>
-    </div>
-    <div class="row views" role="group" aria-label="View">
-      <span class="row-label">View</span>
-      <div class="ctl">
-        <button id="vPreview" class="on" aria-pressed="true">Preview</button>
-        <button id="vVs" class="on" aria-pressed="true">Vectorscope</button>
-        <button id="vWf" class="on" aria-pressed="true">Waveform</button>
-        <button id="vPar" class="on" aria-pressed="true">Parade</button>
-        <span class="grp gap-left">
-          <label for="gain">Scope gain</label>
-          <input type="range" id="gain" min="1" max="100" value="40">
-        </span>
       </div>
     </div>
   </div>
