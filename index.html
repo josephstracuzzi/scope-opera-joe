@@ -426,7 +426,9 @@ async function useDevice(id){
   const note=(what,e)=>log.push(what+': '+e.name+(e.constraint?' ('+e.constraint+')':''));
   async function open(v,what){
     try{ return await navigator.mediaDevices.getUserMedia({audio:false,video:v}); }
-    catch(e){ note(what,e); if(e.name==='NotReadableError'||e.name==='NotAllowedError') throw e; return null; }
+    // Only a refusal ends the attempt. A read error can come from one format the device dislikes,
+    // so the looser requests below still get their turn.
+    catch(e){ note(what,e); if(e.name==='NotAllowedError'||e.name==='SecurityError') throw e; return null; }
   }
   // Capture cards are picky: try progressively looser requests until one is accepted.
   async function tryId(devId){
@@ -459,8 +461,14 @@ async function useDevice(id){
     }
   }catch(e){ /* permission or busy: reported below */ }
   if(!stream){
-    const busy=log.some(l=>l.includes('NotReadableError'));
-    msg('Could not open "'+label+'". '+(busy?'It is in use by another app (close OBS, Zoom, the card\'s own software). ':'')+'Tried: '+log.join(' · '));
+    const unreadable=log.some(l=>l.includes('NotReadableError'));
+    const refused=log.some(l=>/NotAllowedError|SecurityError/.test(l));
+    const virtual=/obs|vmix|ndi|virtual|snap camera|xsplit|manycam/i.test(label);
+    let why='';
+    if(refused) why='Camera access was refused. ';
+    else if(unreadable && virtual) why='It is a virtual camera that isn\'t sending video yet. Switch it on in its own app (in OBS: Start Virtual Camera; in vMix: turn on the External output; for NDI Webcam: pick an NDI source), then choose it again. ';
+    else if(unreadable) why='Windows could not read video from it. Another app may be using it (Zoom, Teams, OBS, the device\'s own software), or it has no signal. ';
+    msg('Could not open "'+label+'". '+why+'Tried: '+log.join(' · '));
     useTest(); return;
   }
   vid.srcObject=stream; vid.removeAttribute('src');
