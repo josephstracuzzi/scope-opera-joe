@@ -347,13 +347,20 @@ window.addEventListener('resize',()=>{ setSide(layout.side); setVs(layout.vs); }
 
 /* ---------- sources ---------- */
 async function scan(){
-  let tmp=null;
-  if(!stream){
+  const list=async()=>(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+  let devs=await list(), tmp=null;
+  // Names only appear once camera access is granted. The app has it already; a browser may need to ask,
+  // which means briefly opening the default camera. That camera failing to open (a virtual camera with
+  // no signal, or one busy in another app) must not stop the list: only a refusal does.
+  if(!stream && devs.some(d=>!d.label)){
     try{ tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false}); }
-    catch(e){ msg('Camera access was blocked ('+e.name+'). Allow camera access for this page, then press "Find capture devices" again.'); return; }
+    catch(e){
+      if(e.name==='NotAllowedError'||e.name==='SecurityError'){ msg('Camera access was blocked ('+e.name+'). Allow camera access for this page, then press "Find capture devices" again.'); return; }
+      errLog.push(new Date().toISOString().slice(11,19)+'  default camera would not open while listing devices ('+e.name+')');
+    }
+    devs=await list();
+    if(tmp) tmp.getTracks().forEach(t=>t.stop());
   }
-  const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
-  if(tmp) tmp.getTracks().forEach(t=>t.stop());
   const sel=$('src'), keep=sel.value;
   sel.innerHTML='<option value="test">Test pattern (75% bars)</option>';
   devs.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId||('idx:'+i); o.textContent=d.label||('Video device '+(i+1)); sel.appendChild(o); });
