@@ -127,7 +127,7 @@ body.resizing.col{cursor:col-resize} body.resizing.row{cursor:row-resize}
   <div class="grp">
     <label for="src">Input</label>
     <select id="src"><option value="test">Test pattern (75% bars)</option></select>
-    <button id="scan">Find capture devices</button>
+    <button id="scan" title="Find devices again and reopen the selected one">Reload</button>
     <select id="res" title="Requested capture resolution">
       <option value="1920x1080">1080p</option>
       <option value="3840x2160">2160p</option>
@@ -413,7 +413,7 @@ async function scan(){
   if(!stream && devs.some(d=>!d.label)){
     try{ tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false}); }
     catch(e){
-      if(e.name==='NotAllowedError'||e.name==='SecurityError'){ msg('Camera access was blocked ('+e.name+'). Allow camera access for this page, then press "Find capture devices" again.'); return; }
+      if(e.name==='NotAllowedError'||e.name==='SecurityError'){ msg('Camera access was blocked ('+e.name+'). Allow camera access for this page, then press RELOAD.'); return; }
       errLog.push(new Date().toISOString().slice(11,19)+'  default camera would not open while listing devices ('+e.name+')');
     }
     devs=await list();
@@ -516,7 +516,12 @@ function useFile(f){
   sel.value='file'; msg('');
 }
 ['loadedmetadata','resize'].forEach(ev=>vid.addEventListener(ev,()=>{ setStageAspect(vid.videoWidth,vid.videoHeight); fitStage(); }));
-$('scan').onclick=scan;
+// RELOAD: list the devices again, then reopen the selected one (also the way to retry after NO SIGNAL)
+$('scan').onclick=async()=>{
+  await scan();
+  const v=$('src').value;
+  if(v!=='test' && v!=='file') useDevice(v);
+};
 ['copyErr','copyDiag'].forEach(id=>{ const b=$(id); b.dataset.label=b.textContent; b.onclick=()=>copyDiagnostics(b); });
 $('hideMsg').onclick=()=>{ msgEl.hidden=true; };
 $('src').onchange=e=>{ const v=e.target.value; if(v==='test') useTest(); else if(v==='file') vid.play(); else useDevice(v); };

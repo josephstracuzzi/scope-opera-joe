@@ -29,7 +29,9 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 ## ✨ Features
 
 ### Input
-- Any **capture card or webcam** your computer sees. **FIND CAPTURE DEVICES** lists them, and the last one you used opens again at the next launch.
+- Any **capture card or webcam** your computer sees, including virtual cameras such as OBS, vMix and NDI Webcam. The last one you used opens again at the next launch.
+- **RELOAD** lists the devices again (after you plug one in, for example) and reopens the selected one.
+- If the selected device sends nothing, the picture says **NO SIGNAL**.
 - Ask for **1080p, 2160p or 720p** and a frame rate (**AUTO, 60, 59.94, 50, 30, 29.97, 25, 24**). Capture cards can be picky, so if the card refuses, Scope Opera Joe tries looser settings until it gets a picture.
 - A built-in **test pattern**: 75% colour bars, a greyscale ramp, skin-tone patches, sharp and soft lines for peaking, and a rotating hue wheel.
 - **OPEN FILE…** to check a video file instead.

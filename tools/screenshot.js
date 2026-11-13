@@ -24,6 +24,9 @@ app.whenReady().then(() => {
         const win = BrowserWindow.getAllWindows()[0];
         win.setContentSize(1600, 900);
         await new Promise(r => setTimeout(r, 2500));
+        // Nothing focused or open (a focused list can show up opened in the capture)
+        await win.webContents.executeJavaScript('document.activeElement?.blur()');
+        await new Promise(r => setTimeout(r, 300));
         const image = await win.webContents.capturePage();
         fs.mkdirSync(path.dirname(out), { recursive: true });
         fs.writeFileSync(out, image.toPNG());
