@@ -31,7 +31,7 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 ### Input
 - Any **capture card or webcam** your computer sees, including virtual cameras such as OBS, vMix and NDI Webcam. The last one you used opens again at the next launch.
 - **RELOAD** lists the devices again (after you plug one in, for example) and reopens the selected one.
-- If the selected device sends nothing, the picture says **NO SIGNAL**.
+- If the selected device sends nothing, the picture says **NO SIGNAL** (after a few seconds; it keeps trying, and the picture comes up as soon as the device starts sending).
 - Ask for **2160p, 1080p or 720p** and a frame rate (**AUTO, 60, 59.94, 50, 30, 29.97, 25, 24**). Capture cards can be picky, so if the card refuses, Scope Opera Joe tries looser settings until it gets a picture.
 - Once a device is open, the resolution and frame-rate menus show what it is **actually sending** and list only what it can do. Your own choice is remembered for the next device and the next launch.
 - Devices that only send **YV12** (vMix lists one for each output) are greyed out at the bottom of the list, under **Not supported**: the app can't read that format. Use the same output without "YV12".
@@ -46,9 +46,14 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 - **RGB parade** with 0/25/50/75/100% lines. **STACK** overlays red, green and blue in one panel, so where all three match the trace reads white.
 - **GAIN** makes faint traces brighter. Double-click any slider to put it back to its default.
 
+<img src="docs/feature-scopes.png" width="320" alt="Vectorscope, luma waveform and the RGB parade in STACK mode, with the 75% test pattern">
+
 ### On the picture
 - **ZEBRAS** stripe everything above a level you choose (50–109%).
 - **PEAKING** outlines sharp edges in red, green, blue, yellow or white, with a sensitivity slider.
+
+<img src="docs/feature-zebras-peaking.png" width="597" alt="Zebra stripes on the brightest end of the greyscale ramp, and red peaking outlines on the sharp lines but not on the soft ones">
+
 - **GUIDES**: frame shapes for other deliveries (9:16, 4:5, 1:1, 4:3, 16:9, 1.85, 2:1, 2.39) with the outside shaded, plus **CENTRE**, **THIRDS**, a 4×4 **GRID** and **SAFE** areas (93% action, 90% title). With a frame shape set, the other guides sit inside it.
 - Zebras and peaking are drawn on the graphics card in the same pass as the picture, so they never lag behind it.
 - Guides, zebras and peaking start off; after that they come back the way you left them.
@@ -72,7 +77,11 @@ Your settings (layout, guides, last device) are kept in your app-data folder (`%
 | **Home** on a bar | Reset its size |
 
 ### When something goes wrong
-The footer along the bottom shows what the picture is: **LIVE** in green for a working device, **TEST PATTERN** or **FILE** in orange, **NO SIGNAL** in red. Next to it is a live readout of the size, frame rates and scope speed.
+The footer along the bottom shows what the picture is: **LIVE** in green for a working device, **TEST PATTERN** or **FILE** in orange, **NO SIGNAL** in red. Next to it, **INPUT** is the size and frame rate coming in, and **REDRAW** is how many times a second the picture and the scopes update (the picture number turns orange if it can't keep up).
+
+<img src="docs/feature-footer.png" width="480" alt="Footer with a green LIVE badge, INPUT 1920x1080 at 20 fps and REDRAW 60 / 20 fps">
+
+<img src="docs/feature-no-signal.png" width="420" alt="The picture area saying NO SIGNAL in red, with a red NO SIGNAL badge in the footer">
 
 **CONSOLE** at the right of the footer opens a log of what happened: events in blue, problems in red (for example, why a device wouldn't open). The button turns red when there's a problem you haven't looked at yet. **COPY LOGS** copies the log; **COPY DIAGNOSTICS** copies a full report with your devices, their settings and the log, ready to paste into a bug report.
 
