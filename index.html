@@ -30,9 +30,9 @@ body{background:var(--bg);color:var(--fg);font:12px/1.35 var(--font-ui);display:
 /* Header: logo on the left, then two rows: input + show/fullscreen, and guides + zebras/peaking/gain.
    A row that runs out of room wraps inside itself, never into the other row. */
 header{display:flex;flex-direction:column;gap:6px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
-.hrow{display:flex;align-items:flex-start;gap:20px}
+.hrow{display:flex;align-items:center;gap:20px}
 .hrow > .ctl{flex:1;min-width:0}
-.brand{display:flex;align-items:center;gap:8px;flex-shrink:0;height:27px}
+.brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .ctl .grp{margin-right:12px;flex-wrap:wrap}
 .ctl .grp:last-child{margin-right:0}
@@ -58,7 +58,6 @@ button.icon svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-widt
    so both header rows stay on one line each */
 @media (max-width:1400px){
   /* "header" in front so these win over the general button / slider styles further down */
-  header .header-logo{height:22px}
   header .brand{gap:6px}
   header .hrow{gap:14px}
   header button,header .chip{padding:6px 7px}
@@ -72,7 +71,10 @@ button.icon svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-widt
   header .ctl.one-row .pic > span{gap:5px}
   header .ctl .fs{margin-left:6px}
 }
-.header-logo{height:30px;width:auto;display:block;cursor:pointer}
+/* Same size JOE as PLAYBACK JOE: its saucer is 36 px tall in a 50 px logo, 23 px at 1250 px and narrower.
+   Our saucer is 84/120 of the image, so the image is 52 px (33 px narrow). */
+.header-logo{height:52px;width:auto;display:block;cursor:pointer}
+@media (max-width:1250px){ header .header-logo{height:33px} }
 .header-logo:hover{opacity:.85}
 .version-badge{background:var(--blue);color:#fff;font-size:9px;padding:2px 6px;border-radius:3px;font-weight:bold;letter-spacing:.5px;cursor:pointer;white-space:nowrap}
 .version-badge:hover{background:var(--blue-hover)}
